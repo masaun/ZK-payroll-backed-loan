@@ -13,3 +13,6 @@
 .env.*
 *.log
 dist/
+
+# ZX circuit - client
+circuits/one/client/package-lock.json
