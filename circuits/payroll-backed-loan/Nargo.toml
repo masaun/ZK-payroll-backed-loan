@@ -1,0 +1,6 @@
+[package]
+name = "payroll_backed_loan"
+type = "bin"
+authors = [""]
+
+[dependencies]
