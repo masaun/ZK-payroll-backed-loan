@@ -60,7 +60,7 @@ fn main(
         )
     );
 
-    // 5. Prevent double factoring
+    // 5. Prevent double factoring (= @dev - Merkle Tree of nuillifiers may be needed + The Merkle Root of nullifiers should be stored into on-chain and passed as public input of this ZK circuit)
     assert(is_nullifier_unused(nullifier));
 }
 
