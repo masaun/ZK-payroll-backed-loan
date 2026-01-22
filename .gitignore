@@ -20,3 +20,5 @@ circuits/invoice_refactoring/client/package-lock.json
 circuits/one/client/package-lock.json
 circuits/smt_exclusion/client/package-lock.json
 circuits/verify_signer/client/package-lock.json
+
+circuits/payroll-backed-loan/client/pnpm-lock.yaml
