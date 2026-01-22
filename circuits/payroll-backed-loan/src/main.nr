@@ -1,7 +1,6 @@
 //mod tests;
 use std::hash::pedersen_hash;
 
-
 /**
  * @notice - ZK circuit in Noir for the Payroll-Backed Loan
  * @dev - zkTLS Proof of payroll + publicInputs (amount of payroll), which is retrieved via Reclaim zkTLS, may be stored into here - To create a merkle tree.
@@ -13,18 +12,18 @@ fn main(
 
     // PRIVATE - Parameters from zkTLS Proof of payroll
     payroll_proof: [Field; 64], // @dev - zkTLS Proof of payroll, which is retrieved via Reclaim zkTLS Proof
-    payroll_amount: u64,      // @dev - The amount of payroll, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
+    payroll_amount: u64,        // @dev - The amount of payroll, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
     employment_status: bool,    // @dev - The employment status of the borrower, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
-    hire_date: u32,           // @dev - The hire date of the borrower, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
-    current_date: u32,        // @dev - The current date, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
+    hire_date: u32,             // @dev - The hire date of the borrower, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
+    current_date: u32,          // @dev - The current date, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
     
     // PRIVATE - Parameters for loan eligibility
-    min_payroll_amount: u64,      // @dev - The minimum payroll amount required for the loan
-    min_tenure_months: u32,       // @dev - The minimum tenure in months required for the loan
+    min_payroll_amount: u64,        // @dev - The minimum payroll amount required for the loan
+    min_tenure_months: u32,         // @dev - The minimum tenure in months required for the loan
     payroll_history: [Field; 32],   // @dev - The payroll history of the borrower
-    salary: u64,                  // @dev - The salary of the borrower
-    repayment_ratio: u64,         // @dev - The repayment ratio for the loan
-    loan_amount: u64,             // @dev - The amount of the loan requested
+    salary: u64,                    // @dev - The salary of the borrower
+    repayment_ratio: u64,           // @dev - The repayment ratio for the loan
+    loan_amount: u64,               // @dev - The amount of the loan requested
 
     // PRIVATE - Parameters for jurisdiction allowlist (OFAC check)
     jurisdiction_code: Field,   // @dev - The jurisdiction code of the borrower, which will be verifiy the ZK circuit for OFAC check using zkPassport libraries that is intriduced in the SunSpot example repo

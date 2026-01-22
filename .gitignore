@@ -15,4 +15,8 @@
 dist/
 
 # ZX circuit - client
+circuits/payroll-backed-loan/client/package-lock.json
+circuits/invoice_refactoring/client/package-lock.json
 circuits/one/client/package-lock.json
+circuits/smt_exclusion/client/package-lock.json
+circuits/verify_signer/client/package-lock.json
