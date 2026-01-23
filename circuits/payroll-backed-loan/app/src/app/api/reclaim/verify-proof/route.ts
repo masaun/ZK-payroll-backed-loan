@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyProofData } from '@/lib/zktls/zktls-operation';
+import { verifyProofData } from '@/lib/zktls/reclaim/reclaim-js-sdk-integration/zktls-reclaim-js-sdk-integration';
 
 /**
  * API Route: Verify Proof

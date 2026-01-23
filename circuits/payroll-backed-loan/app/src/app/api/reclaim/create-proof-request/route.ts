@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createProofRequest } from '@/lib/zktls/zktls-operation';
+import { createProofRequest } from '@/lib/zktls/reclaim/reclaim-js-sdk-integration/zktls-reclaim-js-sdk-integration';
 
 /**
  * API Route: Create Proof Request

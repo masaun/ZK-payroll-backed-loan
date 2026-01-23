@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { generateProof } from '@/lib/zktls/zktls-operation';
+import { generateProof } from '@/lib/zktls/reclaim/reclaim-js-sdk-integration/zktls-reclaim-js-sdk-integration';
 
 interface UseZkTlsProofReturn {
   isGenerating: boolean;
