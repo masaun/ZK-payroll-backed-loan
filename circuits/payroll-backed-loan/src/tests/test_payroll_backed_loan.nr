@@ -1,4 +1,13 @@
-use crate::{main, libs};
+use crate::{
+    main, 
+    types, PrivateInputs,
+    libs 
+};
+use types::{
+    public_inputs::{PublicInputs},
+    public_outputs::{PublicOutputs},
+    //private_inputs::{PrivateInputs}
+};
 use libs::{
     poseidon::poseidon_hash::poseidon_hash_2,
     payroll::months_calculator::months_between
@@ -54,8 +63,12 @@ fn test_payroll_backed_loan() {
     let repayment_ratio: u64 = 2;  // @dev - The repayment ratio for the loan (can borrow up to 2x monthly salary)
     let loan_amount: u64 = 10000;  // @dev - The amount of the loan requested ($10,000)
 
-    let _nullifier = main(
-        nullifier,
+    // @dev - Create PublicInputs and PrivateInputs structs
+    let public_inputs = PublicInputs {
+        nullifier
+    };
+
+    let private_inputs = PrivateInputs {
         payroll_proof,
         payroll_amount,
         employment_status,
@@ -69,7 +82,14 @@ fn test_payroll_backed_loan() {
         jurisdiction_code,
         allowed_jurisdiction_root,
         jurisdiction_merkle_proof,
+    };
+
+    // @dev - Run the main circuit
+    let _public_outputs = main(
+        public_inputs,
+        private_inputs,
     );
 
-    assert(nullifier == _nullifier);
+    // @dev - Verify outputs
+    assert(public_inputs.nullifier == _public_outputs.nullifier);
 }

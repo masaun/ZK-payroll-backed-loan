@@ -1,5 +1,13 @@
+mod types;
 mod libs;
 mod tests;
+
+use types::{
+    public_inputs::{PublicInputs},
+    public_outputs::{PublicOutputs},
+    //private_inputs::{PrivateInputs}
+};
+
 
 //use std::hash::pedersen_hash;
 //use dep::poseidon::poseidon::bn254::hash_2 as poseidon_hash;
@@ -7,11 +15,6 @@ use libs::{
     poseidon::poseidon_hash::poseidon_hash_2,
     payroll::months_calculator::months_between
 };
-
-// @dev - PublicInput Note struct
-pub struct PublicInputs {
-    nullifier: Field  // @dev - [Negative Point]: "pub" keyword can not attach - if it is defined inside the struct.
-}
 
 // @dev - PrivateInput Note struct: Since a visibility issue, the "pub" keyword cannot be applied to this struct. 
 // @dev - Visibility issue: https://noir-lang.org/docs/noir/concepts/data_types/structs#visibility )
@@ -32,35 +35,37 @@ struct PrivateInputs {
 }
 
 
-
 /**
  * @notice - ZK circuit in Noir for the Payroll-Backed Loan
  * @dev - zkTLS Proof of payroll + publicInputs (amount of payroll), which is retrieved via Reclaim zkTLS, may be stored into here - To create a merkle tree.
  * @dev - The jurisdiction of the borrower, which will be verifiy the ZK circuit for OFAC check using zkPassport libraries that is intriduced in the SunSpot example repo
  */
 fn main(
-    // PUBLIC
-    nullifier: pub Field,
+    public_inputs: PublicInputs,   // @dev - Public Inputs
+    private_inputs: PrivateInputs  // @dev - Private Inputs
+) -> pub PublicOutputs {
+    // @dev - PUBLIC INPUTS
+    let nullifier = public_inputs.nullifier;
 
-    // PRIVATE - Parameters from zkTLS Proof of payroll
-    payroll_proof: [Field; 64], // @dev - zkTLS Proof of payroll, which is retrieved via Reclaim zkTLS Proof
-    payroll_amount: u64,        // @dev - The amount of employee's (borrower's) payroll, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
-    employment_status: bool,    // @dev - The employment status of the borrower, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
-    hire_date: u32,             // @dev - The hire date of the borrower, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
-    current_date: u32,          // @dev - The current date, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
-    
-    // PRIVATE - Parameters for loan eligibility
-    min_payroll_amount: u64,        // @dev - The minimum payroll amount required for the loan
-    min_tenure_months: u32,         // @dev - The minimum tenure in months required for the loan
-    payroll_history: [Field; 32],   // @dev - The payroll history of the borrower
-    repayment_ratio: u64,           // @dev - The repayment ratio for the loan
-    loan_amount: u64,               // @dev - The amount of the loan requested
+    // @dev - PRIVATE INPUTS - Parameters from zkTLS Proof of payroll
+    let payroll_proof = private_inputs.payroll_proof;
+    let payroll_amount = private_inputs.payroll_amount;
+    let employment_status = private_inputs.employment_status;
+    let hire_date = private_inputs.hire_date;
+    let current_date = private_inputs.current_date;
 
-    // PRIVATE - Parameters for jurisdiction allowlist (OFAC check)
-    jurisdiction_code: Field,   // @dev - The jurisdiction code of the borrower, which will be verifiy the ZK circuit for OFAC check using zkPassport libraries that is intriduced in the SunSpot example repo
-    allowed_jurisdiction_root: Field,
-    jurisdiction_merkle_proof: [Field; 32],
-) -> pub Field {
+    // @dev - PRIVATE INPUTS - Parameters for loan eligibility
+    let min_payroll_amount = private_inputs.min_payroll_amount;
+    let min_tenure_months = private_inputs.min_tenure_months;
+    let payroll_history = private_inputs.payroll_history;
+    let repayment_ratio = private_inputs.repayment_ratio;
+    let loan_amount = private_inputs.loan_amount;
+    let jurisdiction_code = private_inputs.jurisdiction_code;
+    let allowed_jurisdiction_root = private_inputs.allowed_jurisdiction_root;
+    let jurisdiction_merkle_proof = private_inputs.jurisdiction_merkle_proof;
+
+    //------------ ZK Circuit Logic for Payroll-Backed Loan Eligibility ------------//
+
     // 1. Employment must be active
     assert(employment_status == true);
 
@@ -92,5 +97,11 @@ fn main(
     assert(nullifier == expected_nullifier);
 
     // @dev - Return values
-    nullifier
+    let public_outputs = PublicOutputs {
+        nullifier: nullifier,
+        // loan_approved: true,
+        // max_loan_amount: max_allowed,
+    };
+
+    public_outputs
 }
