@@ -8,6 +8,29 @@ use libs::{
     payroll::months_calculator::months_between
 };
 
+// @dev - PublicInput Note struct & PrivateInput Note struct
+pub struct PublicInputs {
+    nullifier: Field  // @dev - [Negative Point]: "pub" keyword can not attach - if it is defined inside the struct.
+}
+
+pub struct PrivateInputs {
+    payroll_proof: [Field; 64],
+    payroll_amount: u64,
+    employment_status: bool,
+    hire_date: u32,
+    current_date: u32,
+    min_payroll_amount: u64,
+    min_tenure_months: u32,
+    payroll_history: [Field; 32],
+    repayment_ratio: u64,
+    loan_amount: u64,
+    jurisdiction_code: Field,
+    allowed_jurisdiction_root: Field,
+    jurisdiction_merkle_proof: [Field; 32],
+}
+
+
+
 /**
  * @notice - ZK circuit in Noir for the Payroll-Backed Loan
  * @dev - zkTLS Proof of payroll + publicInputs (amount of payroll), which is retrieved via Reclaim zkTLS, may be stored into here - To create a merkle tree.
