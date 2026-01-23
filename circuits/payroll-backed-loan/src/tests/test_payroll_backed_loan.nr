@@ -1,6 +1,7 @@
 use crate::{
     main, 
-    types, PrivateInputs,
+    types, 
+    PrivateInputs,
     libs 
 };
 use types::{
