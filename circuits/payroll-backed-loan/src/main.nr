@@ -1,10 +1,11 @@
 mod libs;
-//mod tests;
+mod tests;
 
 //use std::hash::pedersen_hash;
 //use dep::poseidon::poseidon::bn254::hash_2 as poseidon_hash;
 use libs::{
-    poseidon::poseidon_hash::poseidon_hash_2
+    poseidon::poseidon_hash::poseidon_hash_2,
+    payroll::months_calculator::months_between
 };
 
 /**
@@ -18,7 +19,7 @@ fn main(
 
     // PRIVATE - Parameters from zkTLS Proof of payroll
     payroll_proof: [Field; 64], // @dev - zkTLS Proof of payroll, which is retrieved via Reclaim zkTLS Proof
-    payroll_amount: u64,        // @dev - The amount of payroll, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
+    payroll_amount: u64,        // @dev - The amount of employee's (borrower's) payroll, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
     employment_status: bool,    // @dev - The employment status of the borrower, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
     hire_date: u32,             // @dev - The hire date of the borrower, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
     current_date: u32,          // @dev - The current date, which is retrieved via Reclaim zkTLS Proof and provided to here as privateInput
@@ -27,7 +28,6 @@ fn main(
     min_payroll_amount: u64,        // @dev - The minimum payroll amount required for the loan
     min_tenure_months: u32,         // @dev - The minimum tenure in months required for the loan
     payroll_history: [Field; 32],   // @dev - The payroll history of the borrower
-    salary: u64,                    // @dev - The salary of the borrower
     repayment_ratio: u64,           // @dev - The repayment ratio for the loan
     loan_amount: u64,               // @dev - The amount of the loan requested
 
@@ -35,7 +35,7 @@ fn main(
     jurisdiction_code: Field,   // @dev - The jurisdiction code of the borrower, which will be verifiy the ZK circuit for OFAC check using zkPassport libraries that is intriduced in the SunSpot example repo
     allowed_jurisdiction_root: Field,
     jurisdiction_merkle_proof: [Field; 32],
-) {
+) -> pub Field {
     // 1. Employment must be active
     assert(employment_status == true);
 
@@ -53,7 +53,7 @@ fn main(
     }
 
     // 5. Loan affordability
-    let max_allowed = salary * repayment_ratio;
+    let max_allowed = payroll_amount * repayment_ratio;
     assert(loan_amount <= max_allowed);
 
     // 6. Optional employer whitelist
@@ -64,12 +64,8 @@ fn main(
         jurisdiction_code,
         allowed_jurisdiction_root
     );
-    assert(nullifier != expected_nullifier);
-}
+    assert(nullifier == expected_nullifier);
 
-
-unconstrained fn months_between(start_date: u32, end_date: u32) -> u32 {
-    // @dev - Placeholder function to calculate the number of months between two dates
-    // In a real implementation, this would involve date arithmetic
-    (end_date - start_date) / 30 // Assuming each month has 30 days for simplicity
+    // @dev - Return values
+    nullifier
 }
