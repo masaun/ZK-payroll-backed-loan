@@ -1,5 +1,11 @@
+mod libs;
 //mod tests;
-use std::hash::pedersen_hash;
+
+//use std::hash::pedersen_hash;
+//use dep::poseidon::poseidon::bn254::hash_2 as poseidon_hash;
+use libs::{
+    poseidon::poseidon_hash::poseidon_hash_2
+};
 
 /**
  * @notice - ZK circuit in Noir for the Payroll-Backed Loan
@@ -54,11 +60,9 @@ fn main(
     //assert(merkle_verify(employer_id, employer_root));
 
     // 7. Prevent double factoring (= @dev - Merkle Tree of nuillifiers may be needed + The Merkle Root of nullifiers should be stored into on-chain and passed as public input of this ZK circuit)
-    let expected_nullifier = pedersen_hash(
-        [
-            jurisdiction_code,
-            allowed_jurisdiction_root,
-        ]
+    let expected_nullifier = poseidon_hash_2(
+        jurisdiction_code,
+        allowed_jurisdiction_root
     );
     assert(nullifier != expected_nullifier);
 }
