@@ -8,12 +8,14 @@ use libs::{
     payroll::months_calculator::months_between
 };
 
-// @dev - PublicInput Note struct & PrivateInput Note struct
+// @dev - PublicInput Note struct
 pub struct PublicInputs {
     nullifier: Field  // @dev - [Negative Point]: "pub" keyword can not attach - if it is defined inside the struct.
 }
 
-pub struct PrivateInputs {
+// @dev - PrivateInput Note struct: Since a visibility issue, the "pub" keyword cannot be applied to this struct. 
+// @dev - Visibility issue: https://noir-lang.org/docs/noir/concepts/data_types/structs#visibility )
+struct PrivateInputs {
     payroll_proof: [Field; 64],
     payroll_amount: u64,
     employment_status: bool,
