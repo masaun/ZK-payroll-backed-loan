@@ -84,7 +84,7 @@ echo ""
 echo "Checking integration files..."
 
 files=(
-    "src/lib/zktls/zktls-operation.ts"
+    "src/lib/zktls/reclaim/reclaim-js-sdk-integration/zktls-reclaim-js-sdk-integration.ts"
     "src/hooks/useZkTlsProof.ts"
     "src/components/ZkTlsButton.tsx"
     "src/app/api/reclaim/create-proof-request/route.ts"
