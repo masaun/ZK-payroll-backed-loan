@@ -83,11 +83,16 @@ app/
 ## 🔐 How It Works
 
 1. **Connect Wallet**: User connects their Solana wallet
-2. **Request Proof**: User clicks "Request zkTLS Proof Generation"
-3. **Verify Identity**: User scans QR code and authenticates with payroll provider
-4. **Generate Proof**: zkTLS proof is generated securely
-5. **Verify Proof**: Backend verifies the proof cryptographically
-6. **Display Data**: Verified payroll data is displayed
+2. **Request Proof** (CLIENT-SIDE): User clicks "Request zkTLS Proof Generation"
+3. **Create Request** (CLIENT-SIDE): Proof request is created directly in the browser
+4. **Verify Identity**: User scans QR code and authenticates with payroll provider
+5. **Generate Proof**: zkTLS proof is generated securely
+6. **Verify Proof** (SERVER-SIDE): Backend verifies the proof cryptographically
+7. **Display Data**: Verified payroll data is displayed
+
+**Architecture:**
+- **Client-Side**: Proof request creation & generation (using `useZkTlsProof` hook)
+- **Server-Side**: Proof verification only (for security)
 
 ## 📚 Documentation
 

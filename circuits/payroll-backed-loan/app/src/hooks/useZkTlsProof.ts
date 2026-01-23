@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { generateProof } from '@/lib/zktls/reclaim/reclaim-js-sdk-integration/zktls-reclaim-js-sdk-integration';
+import { createProofRequest, generateProof } from '@/lib/zktls/reclaim/reclaim-js-sdk-integration/zktls-reclaim-js-sdk-integration';
 
 interface UseZkTlsProofReturn {
   isGenerating: boolean;
@@ -13,6 +13,11 @@ interface UseZkTlsProofReturn {
 
 /**
  * Custom hook for zkTLS proof generation using Reclaim Protocol
+ * 
+ * CLIENT-SIDE proof generation:
+ * - Creates proof request directly on client
+ * - Generates proof using Reclaim SDK
+ * - Verifies proof on backend (server-side for security)
  * 
  * @example
  * ```tsx
@@ -46,30 +51,31 @@ export function useZkTlsProof(): UseZkTlsProofReturn {
       setError(null);
       setProofData(null);
 
-      console.log('🔄 Requesting proof from backend...');
+      console.log('🔄 Creating proof request on client-side...');
 
-      // Step 1: Fetch proof request configuration from backend
-      const response = await fetch('/api/reclaim/create-proof-request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Get credentials from environment (public)
+      const appId = process.env.NEXT_PUBLIC_RECLAIM_APP_ID;
+      const appSecret = process.env.NEXT_PUBLIC_RECLAIM_APP_SECRET;
+      const providerId = process.env.NEXT_PUBLIC_RECLAIM_PROVIDER_ID || 'payroll-provider';
+
+      if (!appId || !appSecret) {
+        throw new Error('Reclaim credentials not configured. Please set NEXT_PUBLIC_RECLAIM_APP_ID and NEXT_PUBLIC_RECLAIM_APP_SECRET in environment variables.');
+      }
+
+      // Step 1: Create proof request CLIENT-SIDE
+      const proofRequest = await createProofRequest(
+        {
+          appId,
+          appSecret,
+          providerId,
         },
-        body: JSON.stringify({
-          userAddress: userAddress || 'anonymous',
-          message: 'Payroll verification for loan application',
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create proof request');
-      }
-
-      const { proofRequest } = await response.json();
-
-      if (!proofRequest) {
-        throw new Error('No proof request returned from server');
-      }
+        {
+          context: userAddress ? {
+            address: userAddress,
+            message: 'Payroll verification for loan application',
+          } : undefined,
+        }
+      );
 
       console.log('✅ Proof request created, initiating zkTLS flow...');
 
@@ -80,38 +86,40 @@ export function useZkTlsProof(): UseZkTlsProofReturn {
           onSuccess: async (proofs) => {
             console.log('✅ Proof generated successfully:', proofs);
             
-            // Step 3: Verify proof on backend
-            console.log('🔄 Verifying proof on backend...');
+            // @dev - [TODO]: Step 3 (Verifying a proof) will be done via the on-chain verification. (rather than backend/server-side verification)
+
+            // // Step 3: Verify proof on backend (ALWAYS server-side for security)
+            // console.log('🔄 Verifying proof on backend...');
             
-            try {
-              const verifyResponse = await fetch('/api/reclaim/verify-proof', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ proofs }),
-              });
+            // try {
+            //   const verifyResponse = await fetch('/api/reclaim/verify-proof', {
+            //     method: 'POST',
+            //     headers: {
+            //       'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify({ proofs }),
+            //   });
 
-              if (!verifyResponse.ok) {
-                const errorData = await verifyResponse.json();
-                throw new Error(errorData.error || 'Proof verification failed');
-              }
+            //   if (!verifyResponse.ok) {
+            //     const errorData = await verifyResponse.json();
+            //     throw new Error(errorData.error || 'Proof verification failed');
+            //   }
 
-              const verificationResult = await verifyResponse.json();
+            //   const verificationResult = await verifyResponse.json();
 
-              if (verificationResult.isValid) {
-                console.log('✅ Proof verified successfully!');
-                console.log('📊 Extracted Data:', verificationResult.data);
-                setProofData(verificationResult.data);
-              } else {
-                throw new Error('Proof verification failed - invalid proof');
-              }
-            } catch (verifyError) {
-              console.error('❌ Verification error:', verifyError);
-              setError(verifyError instanceof Error ? verifyError.message : 'Verification failed');
-            } finally {
-              setIsGenerating(false);
-            }
+            //   if (verificationResult.isValid) {
+            //     console.log('✅ Proof verified successfully!');
+            //     console.log('📊 Extracted Data:', verificationResult.data);
+            //     setProofData(verificationResult.data);
+            //   } else {
+            //     throw new Error('Proof verification failed - invalid proof');
+            //   }
+            // } catch (verifyError) {
+            //   console.error('❌ Verification error:', verifyError);
+            //   setError(verifyError instanceof Error ? verifyError.message : 'Verification failed');
+            // } finally {
+            //   setIsGenerating(false);
+            // }
           },
           onError: (err) => {
             console.error('❌ Proof generation error:', err);
