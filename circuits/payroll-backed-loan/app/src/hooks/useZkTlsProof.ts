@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createProofRequest, generateProof } from '@/lib/zktls/reclaim/reclaim-js-sdk-integration/zktls-reclaim-js-sdk-integration';
+import { requestZkTlsProof } from '@/lib/zktls/reclaim/zktls-reclaim-prover';
+import type { VerifiedProofData } from '@/lib/zktls/reclaim/reclaim-js-sdk-integration/zktls-reclaim-js-sdk-integration';
 
 interface UseZkTlsProofReturn {
   isGenerating: boolean;
   error: string | null;
-  proofData: any;
+  proofData: VerifiedProofData | null;
+  statusMessage: string;
   requestProof: (userAddress?: string) => Promise<void>;
   clearError: () => void;
 }
@@ -14,24 +16,32 @@ interface UseZkTlsProofReturn {
 /**
  * Custom hook for zkTLS proof generation using Reclaim Protocol
  * 
- * CLIENT-SIDE proof generation:
- * - Creates proof request directly on client
- * - Generates proof using Reclaim SDK
- * - Verifies proof on backend (server-side for security)
+ * This hook integrates with the zktls-reclaim-prover module to:
+ * - Create proof requests with user context
+ * - Display QR code modal for mobile verification
+ * - Handle proof generation and verification
+ * - Manage loading and error states
+ * 
+ * The QR code is displayed automatically by the Reclaim SDK when the user
+ * clicks the button. Users can scan it with their mobile device to complete
+ * the zkTLS proof generation.
  * 
  * @example
  * ```tsx
  * function MyComponent() {
- *   const { isGenerating, error, proofData, requestProof } = useZkTlsProof();
+ *   const { isGenerating, error, proofData, statusMessage, requestProof } = useZkTlsProof();
  * 
  *   const handleVerify = async () => {
  *     await requestProof(userWalletAddress);
  *   };
  * 
  *   return (
- *     <button onClick={handleVerify} disabled={isGenerating}>
- *       {isGenerating ? 'Generating Proof...' : 'Verify Payroll'}
- *     </button>
+ *     <div>
+ *       <button onClick={handleVerify} disabled={isGenerating}>
+ *         {isGenerating ? 'Generating Proof...' : 'Verify Payroll'}
+ *       </button>
+ *       {statusMessage && <p>{statusMessage}</p>}
+ *     </div>
  *   );
  * }
  * ```
@@ -39,7 +49,8 @@ interface UseZkTlsProofReturn {
 export function useZkTlsProof(): UseZkTlsProofReturn {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [proofData, setProofData] = useState<any>(null);
+  const [proofData, setProofData] = useState<VerifiedProofData | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   const clearError = useCallback(() => {
     setError(null);
@@ -50,95 +61,38 @@ export function useZkTlsProof(): UseZkTlsProofReturn {
       setIsGenerating(true);
       setError(null);
       setProofData(null);
+      setStatusMessage('Initializing zkTLS proof generation...');
 
-      console.log('🔄 Creating proof request on client-side...');
+      console.log('🔄 Requesting zkTLS proof generation with QR code display...');
 
-      // Get credentials from environment (public)
-      const appId = process.env.NEXT_PUBLIC_RECLAIM_APP_ID;
-      const appSecret = process.env.NEXT_PUBLIC_RECLAIM_APP_SECRET;
-      const providerId = process.env.NEXT_PUBLIC_RECLAIM_PROVIDER_ID || 'payroll-provider';
+      // Use the prover module which handles:
+      // 1. Creating the proof request
+      // 2. Displaying the QR code modal
+      // 3. Waiting for user to scan and verify
+      // 4. Verifying the proof
+      const result = await requestZkTlsProof(
+        userAddress,
+        (status) => {
+          console.log('📊 Status:', status);
+          setStatusMessage(status);
+        }
+      );
 
-      if (!appId || !appSecret) {
-        throw new Error('Reclaim credentials not configured. Please set NEXT_PUBLIC_RECLAIM_APP_ID and NEXT_PUBLIC_RECLAIM_APP_SECRET in environment variables.');
+      if (result.success && result.proofData) {
+        console.log('✅ Proof generated and verified successfully!');
+        console.log('📊 Proof Data:', result.proofData);
+        setProofData(result.proofData);
+        setStatusMessage('Proof verified successfully!');
+      } else {
+        console.error('❌ Proof generation failed:', result.error);
+        setError(result.error || 'Proof generation failed');
+        setStatusMessage('');
       }
-
-      // Step 1: Create proof request CLIENT-SIDE
-      const proofRequest = await createProofRequest(
-        {
-          appId,
-          appSecret,
-          providerId,
-        },
-        {
-          context: userAddress ? {
-            address: userAddress,
-            message: 'Payroll verification for loan application',
-          } : undefined,
-        }
-      );
-
-      console.log('✅ Proof request created, initiating zkTLS flow...');
-
-      // Step 2: Generate proof using Reclaim SDK
-      await generateProof(
-        proofRequest,
-        {
-          onSuccess: async (proofs) => {
-            console.log('✅ Proof generated successfully:', proofs);
-            
-            // @dev - [TODO]: Step 3 (Verifying a proof) will be done via the on-chain verification. (rather than backend/server-side verification)
-
-            // // Step 3: Verify proof on backend (ALWAYS server-side for security)
-            // console.log('🔄 Verifying proof on backend...');
-            
-            // try {
-            //   const verifyResponse = await fetch('/api/reclaim/verify-proof', {
-            //     method: 'POST',
-            //     headers: {
-            //       'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify({ proofs }),
-            //   });
-
-            //   if (!verifyResponse.ok) {
-            //     const errorData = await verifyResponse.json();
-            //     throw new Error(errorData.error || 'Proof verification failed');
-            //   }
-
-            //   const verificationResult = await verifyResponse.json();
-
-            //   if (verificationResult.isValid) {
-            //     console.log('✅ Proof verified successfully!');
-            //     console.log('📊 Extracted Data:', verificationResult.data);
-            //     setProofData(verificationResult.data);
-            //   } else {
-            //     throw new Error('Proof verification failed - invalid proof');
-            //   }
-            // } catch (verifyError) {
-            //   console.error('❌ Verification error:', verifyError);
-            //   setError(verifyError instanceof Error ? verifyError.message : 'Verification failed');
-            // } finally {
-            //   setIsGenerating(false);
-            // }
-          },
-          onError: (err) => {
-            console.error('❌ Proof generation error:', err);
-            setError(err.message || 'Proof generation failed');
-            setIsGenerating(false);
-          },
-        },
-        {
-          theme: 'dark',
-          modalTitle: 'Verify Your Payroll Data',
-          modalSubtitle: 'Scan the QR code with your mobile device to securely verify your income',
-          autoCloseModal: true,
-          autoCloseDelay: 3000,
-          showExtensionPrompt: true,
-        }
-      );
     } catch (err) {
       console.error('❌ Error requesting proof:', err);
       setError(err instanceof Error ? err.message : 'Failed to request proof');
+      setStatusMessage('');
+    } finally {
       setIsGenerating(false);
     }
   }, []);
@@ -147,6 +101,7 @@ export function useZkTlsProof(): UseZkTlsProofReturn {
     isGenerating,
     error,
     proofData,
+    statusMessage,
     requestProof,
     clearError,
   };
