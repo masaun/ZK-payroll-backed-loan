@@ -2,14 +2,14 @@
 name = "sanction_checker"
 type = "lib"
 authors = [""]
-#compiler_version = ">=1.0.0"
+#compiler_version = "1.0.0-beta.18"
 
 [dependencies]
 date = { tag = "v0.5.6", git = "https://github.com/madztheo/noir-date.git" }
-sanctions = {  tag = "main", git = "https://github.com/zkpassport/circuits", directory = "src/noir/lib/exclusion-check/sanctions" }
-utils = {  tag = "main", git = "https://github.com/zkpassport/circuits", directory = "src/noir/lib/utils" }
-validity_check = {  tag = "main", git = "https://github.com/worldfnd/provekit", directory = "noir-examples/noir-passport-examples/passport_validity_check" }
-commitment_utils = {  tag = "main", git = "https://github.com/zkpassport/circuits", directory = "src/noir/lib/commitment/common" }
-expiry_check = {  tag = "main", git = "https://github.com/zkpassport/circuits", directory = "src/noir/lib/data-check/expiry"}
-rsa_sig_check = {  tag = "main", git = "https://github.com/worldfnd/provekit", directory = "noir-examples/noir-passport-examples/zkpassport_libs/sig-check/rsa" }
-tbs_check = {  tag = "main", git = "https://github.com/worldfnd/provekit", directory = "noir-examples/noir-passport-examples/zkpassport_libs/data-check/tbs-pubkey" }
+sanctions = { path = "./forked_libs/zkpassport/exclusion-check/sanctions" }
+utils = { path = "./forked_libs/zkpassport/utils" }
+validity_check = { path = "./forked_libs/provekit/passport_validity_check" }
+commitment_utils = { path = "./forked_libs/zkpassport/commitment/common" }
+expiry_check = { path = "./forked_libs/zkpassport/data-check/expiry" }
+rsa_sig_check = { path = "./forked_libs/provekit/zkpassport_libs/sig-check/rsa" }
+tbs_check = { path = "./forked_libs/provekit/zkpassport_libs/data-check/tbs-pubkey" }
