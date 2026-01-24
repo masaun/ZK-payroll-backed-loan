@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "verify": "tsx verify.ts",
-    "test-transfer": "tsx test-transfer.ts"
+    "test-transfer": "tsx test-transfer.ts",
+    "zktls-prove": "tsx zktls/reclaim/zktls-reclaim-prover.ts"
   },
   "dependencies": {
     "@reclaimprotocol/js-sdk": "^4.7.1",
@@ -13,6 +14,7 @@
     "@solana-program/system": "^0.10.0",
     "@solana/kit": "^5.1.0",
     "circomlibjs": "^0.1.7",
+    "dotenv": "^16.6.1",
     "ws": "^8.18.0"
   },
   "devDependencies": {
