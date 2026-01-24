@@ -7,5 +7,5 @@ authors = [""]
 # Poseidon hash function for Noir
 poseidon = { tag = "v0.1.1", git = "https://github.com/noir-lang/poseidon" }
 
-# OFAC compliance check library
-sanction_checker = { path = "../sanction_checker" }
+# OFAC compliance check library (NOTE: Since the dependencies of this library is adjusted for Noir v0.34.0, we should consider to use this library as it is)
+#sanction_checker = { path = "../sanction_checker" }
