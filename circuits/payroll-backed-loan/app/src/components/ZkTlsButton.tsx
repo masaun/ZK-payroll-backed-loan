@@ -11,13 +11,22 @@ import { useAppKitAccount } from '@reown/appkit/react';
  * 
  * Features:
  * - Automatically uses connected Solana wallet address
- * - Shows loading state during proof generation
- * - Displays error messages
+ * - Shows QR code modal for mobile verification (via Reclaim SDK)
+ * - Displays loading state and progress messages during proof generation
+ * - Shows error messages
  * - Shows verified proof data after successful verification
+ * 
+ * How it works:
+ * 1. User clicks "Request zkTLS Proof Generation" button
+ * 2. QR code modal appears (powered by Reclaim SDK)
+ * 3. User scans QR code with mobile device
+ * 4. User completes verification in Reclaim app
+ * 5. Proof is generated and verified
+ * 6. Verified data is displayed on the page
  */
 export function ZkTlsButton() {
   const { address, isConnected } = useAppKitAccount();
-  const { isGenerating, error, proofData, requestProof, clearError } = useZkTlsProof();
+  const { isGenerating, error, proofData, statusMessage, requestProof, clearError } = useZkTlsProof();
 
   const handleRequestProof = async () => {
     if (!isConnected) {
@@ -96,7 +105,14 @@ export function ZkTlsButton() {
             color: '#1565c0',
           }}
         >
-          <strong>🔄 Processing:</strong> Please scan the QR code or use the browser extension to complete verification...
+          <strong>🔄 {statusMessage || 'Processing...'}</strong>
+          <p style={{ marginTop: '8px', fontSize: '14px' }}>
+            {statusMessage.includes('QR code') 
+              ? '📱 Scan the QR code with your mobile device to complete verification'
+              : statusMessage.includes('Waiting') || statusMessage.includes('Creating')
+              ? '⏳ Setting up your verification session...'
+              : '🔐 Completing zkTLS proof generation...'}
+          </p>
         </div>
       )}
 
