@@ -25,7 +25,7 @@ struct PrivateInputs {
     hire_date: u32,
     current_date: u32,
     min_payroll_amount: u64,
-    min_tenure_months: u32,
+    //min_tenure_months: u32,
     payroll_history: [Field; 32],
     repayment_ratio: u64,
     loan_amount: u64,
@@ -34,6 +34,7 @@ struct PrivateInputs {
     jurisdiction_merkle_proof: [Field; 32],
 }
 
+global MIN_TENURE_MONTHS: u32 = 12; // @dev - Minimum tenure in months (12 months)
 
 /**
  * @notice - ZK circuit in Noir for the Payroll-Backed Loan
@@ -56,13 +57,16 @@ fn main(
 
     // @dev - PRIVATE INPUTS - Parameters for loan eligibility
     let min_payroll_amount = private_inputs.min_payroll_amount;
-    let min_tenure_months = private_inputs.min_tenure_months;
+    //let min_tenure_months = private_inputs.min_tenure_months;
     let payroll_history = private_inputs.payroll_history;
     let repayment_ratio = private_inputs.repayment_ratio;
     let loan_amount = private_inputs.loan_amount;
     let jurisdiction_code = private_inputs.jurisdiction_code;
     let allowed_jurisdiction_root = private_inputs.allowed_jurisdiction_root;
     let jurisdiction_merkle_proof = private_inputs.jurisdiction_merkle_proof;
+
+    // @dev - OTHERS (Besides Public/Private Inputs)
+    let min_tenure_months = MIN_TENURE_MONTHS;
 
     //------------ ZK Circuit Logic for Payroll-Backed Loan Eligibility ------------//
 
