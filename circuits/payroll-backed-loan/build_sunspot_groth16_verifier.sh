@@ -55,8 +55,7 @@ echo "Build and deploy verifier"
 sunspot deploy target/payroll_backed_loan.vk
 solana program deploy target/payroll_backed_loan.so --keypair $SOLANA_KEYPAIR
 
-# Run the script files in the /payroll-backed-loan/client directory
+# Run the script files in the /payroll-backed-loan/client/verify-payroll-backed-loan-proof.ts
 echo "Test client"
 cd client && npm install  
-#npm run verify -- --program $ZK_GROTH16_VERIFIER_PROGRAM_ID --keypair ~/.config/solana/solana-deployer-keypair.json
-#npm run test-transfer  # Integration test with SOL transfers
+npm run verify:payroll -- --program $ZK_GROTH16_VERIFIER_PROGRAM_ID --keypair ~/.config/solana/solana-deployer-keypair.json

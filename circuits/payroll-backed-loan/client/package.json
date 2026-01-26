@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "verify": "tsx verify.ts",
+    "verify:payroll": "tsx verify-payroll-backed-loan-proof.ts",
     "test-transfer": "tsx test-transfer.ts",
     "zktls-prove": "tsx zktls/reclaim/zktls-reclaim-prover.ts"
   },
