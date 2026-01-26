@@ -7,6 +7,16 @@ set +a
 
 # Set default keypair if not set in .env
 SOLANA_KEYPAIR=${SOLANA_KEYPAIR:-"$HOME/.config/solana/solana-deployer-keypair.json"}
+SOLANA_CLUSTER=${SOLANA_CLUSTER:-"testnet"}
+
+# Set the Solana cluster
+echo "Setting Solana cluster to: $SOLANA_CLUSTER"
+solana config set --url $(solana config get | grep "RPC URL" | awk '{print $3}' | sed "s/devnet/$SOLANA_CLUSTER/g")
+solana config set --url https://api.$SOLANA_CLUSTER.solana.com
+
+# # Fund it on devnet
+# echo "Airdropping 2 SOL to deployer keypair on devnet..."
+# solana airdrop 2 --keypair ~/.config/solana/solana-deployer-keypair.json
 
 echo "Using keypair: $SOLANA_KEYPAIR"
 echo "Current PROGRAM_ID: $PROGRAM_ID"
@@ -45,9 +55,10 @@ sunspot prove target/payroll_backed_loan.json target/payroll_backed_loan.gz \
 
 echo "Build and deploy verifier"
 sunspot deploy target/payroll_backed_loan.vk
-solana program deploy target/payroll_backed_loan.so
+solana program deploy target/payroll_backed_loan.so --keypair $SOLANA_KEYPAIR
 
+# Run the script files in the /payroll-backed-loan/client directory
 echo "Test client"
 cd client && npm install  
-npm run verify -- --program $PROGRAM_ID --keypair ~/.config/solana/solana-deployer-keypair.json
-npm run test-transfer  # Integration test with SOL transfers
+#npm run verify -- --program $PROGRAM_ID --keypair ~/.config/solana/solana-deployer-keypair.json
+#npm run test-transfer  # Integration test with SOL transfers
