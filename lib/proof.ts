@@ -57,7 +57,8 @@ export function generateGroth16Proof(config: CircuitConfig): void {
   const ccsPath = getCcsPath(config);
   const pkPath = getProvingKeyPath(config);
 
-  execSync(`sunspot prove ${acirPath} ${witnessPath} ${ccsPath} ${pkPath}`, {
+  // Use quoted paths to handle special characters
+  execSync(`sunspot prove "${acirPath}" "${witnessPath}" "${ccsPath}" "${pkPath}"`, {
     cwd: config.circuitDir,
     stdio: "pipe",
   });
