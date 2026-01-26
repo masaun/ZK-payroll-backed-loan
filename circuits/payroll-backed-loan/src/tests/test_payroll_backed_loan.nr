@@ -54,7 +54,7 @@ fn test_payroll_backed_loan() {
     
     // PRIVATE - Parameters for loan eligibility
     let min_payroll_amount: u64 = 3000;              // @dev - The minimum payroll amount required ($3000/month)
-    let min_tenure_months: u32 = 12;                 // @dev - The minimum tenure in months required (12 months)
+    //let min_tenure_months: u32 = 12;                 // @dev - The minimum tenure in months required (12 months)
     let mut payroll_history: [Field; 32] = [0; 32];  // @dev - The payroll history of the borrower
 
     // Fill first 12 months with payroll amounts
@@ -76,7 +76,7 @@ fn test_payroll_backed_loan() {
         hire_date,
         current_date,
         min_payroll_amount,
-        min_tenure_months,
+        //min_tenure_months,
         payroll_history,
         repayment_ratio,
         loan_amount,
