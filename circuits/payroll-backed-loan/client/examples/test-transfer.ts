@@ -52,7 +52,7 @@ import {
   pubkeyToIndex,
   fieldToHex,
   initPoseidon,
-} from "../smt.js";
+} from "../utils/poseidon-and-merkle-tree/smt.js";
 
 // ============================================================================
 // Configuration

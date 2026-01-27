@@ -1,11 +1,15 @@
 import { address } from "@solana/kit";
 import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 import {
   type CircuitConfig,
   type ProofResult,
   getProverTomlPath,
+  compileCircuit,
   generateWitness,
+  compileCcs,
+  setupKeys,
   generateGroth16Proof,
   readProofFiles,
   createInstructionData,
@@ -15,8 +19,9 @@ import {
   printTransactionResult,
   handleVerifyError,
 } from "@solana-noir-examples/lib/verify";
-import { initPoseidon, poseidonHash2, fieldToHex } from "./smt";
-import fs from "fs";
+
+// @dev - Import Poseidon and Sparse Merkle Tree utilities for nullifier computation from the smt.ts
+import { initPoseidon, poseidonHash2, fieldToHex } from "./utils/poseidon-and-merkle-tree/smt";
 
 // Load environment variables from .env file
 dotenv.config({ path: path.join(process.cwd(), "..", ".env") });
@@ -109,7 +114,12 @@ export function generateProof(
   inputs: PayrollBackedLoanInputs
 ): ProofResult {
   writePayrollProverToml(config, inputs);
+  // Recompile circuit to ensure ACIR is fresh
+  compileCircuit(config);
   generateWitness(config);
+  // Regenerate CCS and keys to match the new witness
+  compileCcs(config);
+  setupKeys(config);
   generateGroth16Proof(config);
   return readProofFiles(config);
 }

@@ -44,10 +44,33 @@ function getPublicWitnessPath(config: CircuitConfig): string {
   return path.join(getTargetDir(config), `${config.circuitName}.pw`);
 }
 
+export function compileCircuit(config: CircuitConfig): void {
+  execSync("nargo compile", {
+    cwd: config.circuitDir,
+    stdio: "inherit",
+  });
+}
+
 export function generateWitness(config: CircuitConfig): void {
   execSync("nargo execute", {
     cwd: config.circuitDir,
     stdio: "pipe",
+  });
+}
+
+export function compileCcs(config: CircuitConfig): void {
+  const acirPath = getAcirPath(config);
+  execSync(`sunspot compile "${acirPath}"`, {
+    cwd: config.circuitDir,
+    stdio: "inherit", // Show output for debugging
+  });
+}
+
+export function setupKeys(config: CircuitConfig): void {
+  const ccsPath = getCcsPath(config);
+  execSync(`sunspot setup "${ccsPath}"`, {
+    cwd: config.circuitDir,
+    stdio: "inherit", // Show output for debugging
   });
 }
 
@@ -89,7 +112,12 @@ export function generateProofWithInputs(
   inputs: Record<string, string | number>
 ): ProofResult {
   writeSimpleProverToml(config, inputs);
+  // Recompile circuit to ensure ACIR is fresh
+  compileCircuit(config);
   generateWitness(config);
+  // Regenerate CCS and keys to match the new witness
+  compileCcs(config);
+  setupKeys(config);
   generateGroth16Proof(config);
   return readProofFiles(config);
 }
