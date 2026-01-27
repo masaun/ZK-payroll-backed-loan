@@ -20,7 +20,9 @@ circuits/one/client/package-lock.json
 circuits/smt_exclusion/client/package-lock.json
 circuits/verify_signer/client/package-lock.json
 
-circuits/payroll-backed-loan/client/pnpm-lock.yaml
-
 # Solana deployer keypair
 deployer-keypair.json
+
+# Node modules
+pnpm-lock.yaml
+circuits/payroll-backed-loan/client/pnpm-lock.yaml

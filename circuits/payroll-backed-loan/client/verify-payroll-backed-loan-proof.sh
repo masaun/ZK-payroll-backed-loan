@@ -11,4 +11,4 @@ npm run verify:payroll -- --program ${ZK_GROTH16_VERIFIER_PROGRAM_ID}
 npm run verify:payroll -- --corrupt
 
 # Use different RPC endpoint
-npm run verify:payroll -- --rpc https://api.mainnet-beta.solana.com
+npm run verify:payroll -- --rpc https://api.testnet.solana.com

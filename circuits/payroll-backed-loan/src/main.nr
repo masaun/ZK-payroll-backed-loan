@@ -77,7 +77,8 @@ fn main(
     assert(payroll_amount >= min_payroll_amount);
 
     // 3. Tenure requirement
-    let tenure_months = unsafe { months_between(hire_date, current_date) };
+    // Safety: months_between is now a constrained function
+    let tenure_months = months_between(hire_date, current_date);
     assert(tenure_months >= min_tenure_months);
 
     // 4. Payroll continuity
