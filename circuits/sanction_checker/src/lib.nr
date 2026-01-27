@@ -13,7 +13,7 @@ use tbs_check::verify_rsa_pubkey_in_tbs;
 fn main(dg1: [u8; DG1_LENGTH], proofs: [SanctionsOrderedMerkleTreeProof; 10], 
     certificate_registry_hash_path: [Field; 16], passport_validity_contents: PassportValidityContents,
     certificate_tags: [Field; 3], certificate_registry_index: Field, current_date: pub u64,
-    ) {
+) {
     // Registry root from zk_passport (https://registry.zkpassport.id/certificates)
     let certificate_registry_root = 0x2f696abafd61692fe9c82281fd461431f5ff1d3ec31c10b2258b3151d89b9c6d;
 

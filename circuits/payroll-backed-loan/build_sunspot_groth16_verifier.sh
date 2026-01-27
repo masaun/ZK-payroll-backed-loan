@@ -51,7 +51,7 @@ sunspot setup target/payroll_backed_loan.ccs
 sunspot prove target/payroll_backed_loan.json target/payroll_backed_loan.gz \
   target/payroll_backed_loan.ccs target/payroll_backed_loan.pk
 
-echo "Build and deploy verifier"
+echo "Build and deploy the Verifier contract on Solana testnet"
 sunspot deploy target/payroll_backed_loan.vk
 solana program deploy target/payroll_backed_loan.so --keypair $SOLANA_KEYPAIR
 
