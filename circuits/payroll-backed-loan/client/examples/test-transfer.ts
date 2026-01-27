@@ -52,7 +52,7 @@ import {
   pubkeyToIndex,
   fieldToHex,
   initPoseidon,
-} from "./smt.js";
+} from "../smt.js";
 
 // ============================================================================
 // Configuration
