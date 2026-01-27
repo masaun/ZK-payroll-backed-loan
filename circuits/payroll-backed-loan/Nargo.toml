@@ -2,6 +2,7 @@
 name = "payroll_backed_loan"
 type = "bin"
 authors = [""]
+version = "0.0.1"
 
 [dependencies]
 # Poseidon hash function for Noir
