@@ -1,6 +1,0 @@
-[package]
-name = "invoice_refactoring"
-type = "bin"
-authors = [""]
-
-[dependencies]
