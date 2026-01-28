@@ -11,14 +11,14 @@ rm -rf target
 #echo "Install the Noir/Nargo v1.0.0-beta.18..."
 #noirup --version 1.0.0-beta.18
 
-# Align the Noir/Nargo version (v1.0.0-beta.18) and bb.js version (v3.0.0-nightly.20251104) of the local machine.
-#echo "Install the bb.js version v3.0.0-nightly.20251104..."
-#bbup --version 3.0.0-nightly.20251104 (Previous bb.js version: v0.87.0)
+# Align the Noir/Nargo version (v1.0.0-beta.18) and bb.js version (v3.0.0-devnet.6-patch.1) of the local machine.
+#echo "Install the bb.js version v3.0.0-devnet.6-patch.1..."
+#bbup --version 3.0.0-devnet.6-patch.1 (Previous bb.js version: v0.87.0)
 
 echo "Check the Noir/Nargo version of the local machine (This version is supposed to be v1.0.0-beta.18)..."
 nargo -V
 
-echo "Check the bb.js version of the local machine (This version is supposed to be v0.87.0)..."
+echo "Check the bb.js version of the local machine (This version is supposed to be v3.0.0-nightly.20251104)..."
 bb --version
 
 # Compile the ZK circuit
@@ -31,32 +31,38 @@ fi
 echo "Gate count:"
 bb gates -b target/payroll_backed_loan.json | jq '.functions[0].circuit_size'
 
-# Create version-specific directory to the frontend directory
-#echo "Creating version-specific directory for version $VERSION to the frontend directory..."
-#mkdir -p "../client-and-server/client/circuits/payroll-backed-loan-$VERSION"
-#mkdir -p "../app/circuits/payroll-backed-loan-$VERSION"
-
 # Generate the verification key (vkey)
 echo "Creating target/vk directory..."
 mkdir -p "target/vk"
 
-echo "Copying payroll-backed-loan.json to app/circuits/payroll-backed-loan-$VERSION..."
-cp target/payroll_backed_loan.json "../client-and-server/client/circuits/payroll-backed-loan-$VERSION/payroll-backed-loan.json"
-
 echo "Generating a vkey (verification key)..."
-bb write_vk -b ./target/payroll_backed_loan.json -o ./target/vk --oracle_hash keccak   # bb.js v3.0.0-nightly.20251104
-#bb write_vk -b ./target/payroll_backed_loan.json -o ./target/vk --oracle_hash keccak  # bb.js v0.87.0 (Same with v3.0.0-nightly.20251104)
+bb write_vk -b ./target/payroll_backed_loan.json -o ./target/vk --oracle_hash keccak   # bb.js v3.0.0-devnet.6-patch.1
+#bb write_vk -b ./target/payroll_backed_loan.json -o ./target/vk --oracle_hash keccak  # bb.js v0.87.0 (Same with v3.0.0-devnet.6-patch.1)
 
-#echo "Generating vk.json to client-and-server/client/circuits/payroll-backed-loan-$VERSION..."
-#node -e "const fs = require('fs'); fs.writeFileSync('../client-and-server/client/circuits/payroll-backed-loan-$VERSION/vk.json', JSON.stringify(Array.from(Uint8Array.from(fs.readFileSync('./target/vk/vk')))));"
+# ============================================================================== #
+# Copying a circuit artifact and verification key (VK) to the frontend directory #
+# ============================================================================== #
+echo "Creating version-specific directory for version $VERSION to the frontend directory..."
+mkdir -p "./app/src/circuits/circuit-artifacts/payroll-backed-loan-$VERSION"
 
-echo "Generate a Solidity Verifier contract from the vkey..."
-bb write_solidity_verifier -k ./target/vk/vk -o ./target/Verifier.sol
+echo "Copying payroll-backed-loan.json to ./app/src/circuits/circuit-artifacts/payroll-backed-loan-$VERSION..."
+cp target/payroll_backed_loan.json "./app/src/circuits/circuit-artifacts/payroll-backed-loan-$VERSION/payroll-backed-loan.json"
 
-echo "Copy a Solidity Verifier contract-generated (Verifier.sol) into the ../contracts/src/circuits/honk-verifier directory"
-cp ./target/Verifier.sol ../contracts/src/circuits/honk-verifier
+echo "Generating vk.json to ./app/src/circuits/circuit-artifacts/payroll-backed-loan-$VERSION..."
+node -e "const fs = require('fs'); fs.writeFileSync('./app/src/circuits/circuit-artifacts/payroll-backed-loan-$VERSION/vk.json', JSON.stringify(Array.from(Uint8Array.from(fs.readFileSync('./target/vk/vk')))));"
 
-echo "Rename the Verifier.sol with the HonkVerifier.sol in the ../contracts/src/circuits/honk-verifier directory"
-mv ../contracts/src/circuits/honk-verifier/Verifier.sol ../contracts/src/circuits/honk-verifier/HonkVerifier.sol
-#mv ../contracts/src/circuits/honk-verifier/Verifier.sol ../contracts/src/circuits/honk-verifier/honk_vk.sol
+
+# ============================ #
+# Solidity Verifier Generation #
+# ============================ #
+# echo "Generate a Solidity Verifier contract from the vkey..."
+# bb write_solidity_verifier -k ./target/vk/vk -o ./target/Verifier.sol
+
+# echo "Copy a Solidity Verifier contract-generated (Verifier.sol) into the ../contracts/src/circuits/honk-verifier directory"
+# cp ./target/Verifier.sol ../contracts/src/circuits/honk-verifier
+
+# echo "Rename the Verifier.sol with the HonkVerifier.sol in the ../contracts/src/circuits/honk-verifier directory"
+# mv ../contracts/src/circuits/honk-verifier/Verifier.sol ../contracts/src/circuits/honk-verifier/HonkVerifierForPayrollBackedLoan.sol
+# #mv ../contracts/src/circuits/honk-verifier/Verifier.sol ../contracts/src/circuits/honk-verifier/honk_vk.sol
+
 echo "Done" 
