@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("CrEd11111111111111111111111111111111111111");
+declare_id!("5noDS5EGojcw8BuRA9vDAmSUBE8iCY2jnQBhzkyEiU1K");
 
 #[program]
 pub mod zk_verifiable_credential_manager {

@@ -5,14 +5,14 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-zk_verifiable_credential_manager = "CrEd11111111111111111111111111111111111111"
-lending = "Lend11111111111111111111111111111111111111"
-borrowing = "Borr11111111111111111111111111111111111111"
+zk_verifiable_credential_manager = "5noDS5EGojcw8BuRA9vDAmSUBE8iCY2jnQBhzkyEiU1K"
+lending = "G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi"
+borrowing = "CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi"
 
 [programs.devnet]
-zk_verifiable_credential_manager = "CrEd11111111111111111111111111111111111111"
-lending = "Lend11111111111111111111111111111111111111"
-borrowing = "Borr11111111111111111111111111111111111111"
+zk_verifiable_credential_manager = "5noDS5EGojcw8BuRA9vDAmSUBE8iCY2jnQBhzkyEiU1K"
+lending = "G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi"
+borrowing = "CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi"
 
 [registry]
 url = "https://api.apr.dev"

@@ -4,11 +4,25 @@
   "description": "Solana smart contracts for ZK payroll-backed lending",
   "main": "index.js",
   "scripts": {
-    "build": "./build.sh",
+    "build": "anchor build",
+    "build:script": "./build.sh",
     "deploy:local": "./deploy.sh localnet",
     "deploy:devnet": "./deploy.sh devnet",
+    "migrate:local": "cd migrations && ./migrate.sh localnet",
+    "migrate:devnet": "cd migrations && ./migrate.sh devnet",
     "test": "anchor test",
-    "clean": "anchor clean"
+    "test:verbose": "anchor test -- --nocapture",
+    "test:zk": "anchor test tests/zk-credential-manager.test.ts",
+    "test:lending": "anchor test tests/lending.test.ts",
+    "test:borrowing": "anchor test tests/borrowing.test.ts",
+    "clean": "anchor clean",
+    "status": "./status.sh",
+    "status:ts": "ts-node scripts/check-status.ts",
+    "example:complete": "ts-node examples/complete-flow.ts",
+    "example:zk": "ts-node examples/zk-proof-storage.ts",
+    "example:lending": "ts-node examples/lending-pool.ts",
+    "validator": "solana-test-validator",
+    "logs": "solana logs"
   },
   "keywords": [
     "solana",

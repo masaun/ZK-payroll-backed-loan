@@ -14,11 +14,15 @@
 dist/
 
 # ZX circuit - client
-client/package-lock.json
 
 # Solana deployer keypair
 deployer-keypair.json
 
+# Solana - Anchor
+Anchor.toml
+
 # Node modules
 pnpm-lock.yaml
-client/pnpm-lock.yaml
+package-lock.json
+bun.lock
+yarn.lock
