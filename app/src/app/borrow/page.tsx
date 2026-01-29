@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { StatsCard } from '@/components/StatsCard';
 import { TransactionModal } from '@/components/TransactionModal';
 import { ConnectButton } from '@/components/ConnectButton';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 interface CollateralPool {
   address: string;
@@ -14,8 +15,16 @@ interface CollateralPool {
   borrowAPY: string;
 }
 
+interface BorrowerState {
+  borrower: string;
+  collateralAmount: string;
+  borrowedAmount: string;
+  collateralTimestamp: number;
+  borrowTimestamp: number;
+}
+
 export default function BorrowPage() {
-  const [connected, setConnected] = useState(false);
+  const { address, isConnected } = useAppKitAccount();
   const [loading, setLoading] = useState(false);
   const [showDepositCollateralModal, setShowDepositCollateralModal] = useState(false);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
@@ -31,10 +40,11 @@ export default function BorrowPage() {
   const [userBorrowed, setUserBorrowed] = useState('0.00');
   const [healthFactor, setHealthFactor] = useState('∞');
   const [availableToBorrow, setAvailableToBorrow] = useState('0.00');
+  const [borrowerState, setBorrowerState] = useState<BorrowerState | null>(null);
 
   const [pools, setPools] = useState<CollateralPool[]>([
     {
-      address: 'Pool1...',
+      address: 'CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi',
       collateralMint: 'SOL',
       totalCollateral: '2,100,000',
       collateralRatio: '150',
@@ -44,9 +54,28 @@ export default function BorrowPage() {
   ]);
 
   useEffect(() => {
-    // Check wallet connection
-    setConnected(false); // TODO: Replace with actual wallet check
-  }, []);
+    if (isConnected && address) {
+      loadBorrowerState();
+    }
+  }, [isConnected, address]);
+
+  const loadBorrowerState = async () => {
+    try {
+      // TODO: Fetch borrower state from Solana
+      // const connection = new Connection('https://api.devnet.solana.com');
+      // const program = new Program(idl, programId, { connection });
+      // const [borrowerPDA] = await PublicKey.findProgramAddress(
+      //   [Buffer.from('borrower'), wallet.publicKey.toBuffer(), collateralPoolPubkey.toBuffer()],
+      //   program.programId
+      // );
+      // const account = await program.account.borrowerState.fetch(borrowerPDA);
+      // setUserCollateral((account.collateralAmount / 1e9).toFixed(2));
+      // setUserBorrowed((account.borrowedAmount / 1e9).toFixed(2));
+      console.log('Loading borrower state for:', address);
+    } catch (error) {
+      console.error('Error loading borrower state:', error);
+    }
+  };
 
   const handleDepositCollateral = async () => {
     if (!collateralAmount || parseFloat(collateralAmount) <= 0) {
@@ -56,18 +85,36 @@ export default function BorrowPage() {
 
     setLoading(true);
     try {
-      // TODO: Call deposit_into_collateral_pool from the contract
+      // TODO: Implement actual contract call
+      // Call deposit_into_collateral_pool from the Borrowing contract
       console.log('Depositing collateral:', collateralAmount);
       
-      // Placeholder for contract call
+      // Required accounts:
+      // - collateral_pool: The collateral pool PDA
+      // - borrower_state: The borrower state PDA (created or updated)
+      // - borrower: Signer
+      // - borrower_collateral_account: User's collateral token account
+      // - pool_vault: Pool's collateral vault
+      // - token_program: Token program
+      
+      // Example implementation:
       // const tx = await program.methods
-      //   .depositIntoCollateralPool(new BN(collateralAmount))
-      //   .accounts({ ... })
+      //   .depositIntoCollateralPool(new BN(parseFloat(collateralAmount) * 1e9))
+      //   .accounts({
+      //     collateralPool: collateralPoolPDA,
+      //     borrowerState: borrowerStatePDA,
+      //     borrower: wallet.publicKey,
+      //     borrowerCollateralAccount: userCollateralAccount,
+      //     poolVault: poolVault,
+      //     tokenProgram: TOKEN_PROGRAM_ID,
+      //     systemProgram: SystemProgram.programId,
+      //   })
       //   .rpc();
       
-      alert('Collateral deposited successfully!');
+      alert('Collateral deposited successfully! (Simulated)');
       setShowDepositCollateralModal(false);
       setCollateralAmount('');
+      loadBorrowerState();
     } catch (error) {
       console.error('Deposit collateral error:', error);
       alert('Deposit failed: ' + (error as Error).message);
@@ -84,18 +131,38 @@ export default function BorrowPage() {
 
     setLoading(true);
     try {
-      // TODO: Call borrow_against_collateral from the contract
+      // TODO: Implement actual contract call
+      // Call borrow_from_lending_pool from the Borrowing contract
       console.log('Borrowing:', borrowAmount);
       
-      // Placeholder for contract call
+      // Required accounts:
+      // - collateral_pool: The collateral pool PDA
+      // - borrower_state: The borrower state PDA
+      // - borrower: Signer
+      // - borrower_token_account: User's borrowed token account
+      // - lending_pool: The lending pool PDA (from lending program)
+      // - lending_pool_vault: Lending pool's vault
+      // - lending_program: The lending program ID
+      
+      // Example implementation:
       // const tx = await program.methods
-      //   .borrowAgainstCollateral(new BN(borrowAmount), lendingPoolPubkey)
-      //   .accounts({ ... })
+      //   .borrowFromLendingPool(new BN(parseFloat(borrowAmount) * 1e9))
+      //   .accounts({
+      //     collateralPool: collateralPoolPDA,
+      //     borrowerState: borrowerStatePDA,
+      //     borrower: wallet.publicKey,
+      //     borrowerTokenAccount: userTokenAccount,
+      //     lendingPool: lendingPoolPDA,
+      //     lendingPoolVault: lendingPoolVault,
+      //     lendingProgram: lendingProgramId,
+      //     tokenProgram: TOKEN_PROGRAM_ID,
+      //   })
       //   .rpc();
       
-      alert('Borrow successful!');
+      alert('Borrow successful! (Simulated)');
       setShowBorrowModal(false);
       setBorrowAmount('');
+      loadBorrowerState();
     } catch (error) {
       console.error('Borrow error:', error);
       alert('Borrow failed: ' + (error as Error).message);
@@ -112,18 +179,33 @@ export default function BorrowPage() {
 
     setLoading(true);
     try {
-      // TODO: Call repay_loan from the contract
+      // TODO: Implement actual contract call
+      // Call repay_to_lending_pool from the Borrowing contract
       console.log('Repaying:', repayAmount);
       
-      // Placeholder for contract call
+      // Required accounts:
+      // - borrower_state: The borrower state PDA
+      // - borrower: Signer
+      // - borrower_token_account: User's token account
+      // - lending_pool_vault: Lending pool's vault
+      // - token_program: Token program
+      
+      // Example implementation:
       // const tx = await program.methods
-      //   .repayLoan(new BN(repayAmount))
-      //   .accounts({ ... })
+      //   .repayToLendingPool(new BN(parseFloat(repayAmount) * 1e9))
+      //   .accounts({
+      //     borrowerState: borrowerStatePDA,
+      //     borrower: wallet.publicKey,
+      //     borrowerTokenAccount: userTokenAccount,
+      //     lendingPoolVault: lendingPoolVault,
+      //     tokenProgram: TOKEN_PROGRAM_ID,
+      //   })
       //   .rpc();
       
-      alert('Repayment successful!');
+      alert('Repayment successful! (Simulated)');
       setShowRepayModal(false);
       setRepayAmount('');
+      loadBorrowerState();
     } catch (error) {
       console.error('Repay error:', error);
       alert('Repayment failed: ' + (error as Error).message);
@@ -140,18 +222,35 @@ export default function BorrowPage() {
 
     setLoading(true);
     try {
-      // TODO: Call withdraw_from_collateral_pool from the contract
+      // TODO: Implement actual contract call
+      // Call withdraw_from_collateral_pool from the Borrowing contract
       console.log('Withdrawing collateral:', withdrawCollateralAmount);
       
-      // Placeholder for contract call
+      // Required accounts:
+      // - collateral_pool: The collateral pool PDA
+      // - borrower_state: The borrower state PDA
+      // - borrower: Signer
+      // - borrower_collateral_account: User's collateral token account
+      // - pool_vault: Pool's collateral vault
+      // - token_program: Token program
+      
+      // Example implementation:
       // const tx = await program.methods
-      //   .withdrawFromCollateralPool(new BN(withdrawCollateralAmount))
-      //   .accounts({ ... })
+      //   .withdrawFromCollateralPool(new BN(parseFloat(withdrawCollateralAmount) * 1e9))
+      //   .accounts({
+      //     collateralPool: collateralPoolPDA,
+      //     borrowerState: borrowerStatePDA,
+      //     borrower: wallet.publicKey,
+      //     borrowerCollateralAccount: userCollateralAccount,
+      //     poolVault: poolVault,
+      //     tokenProgram: TOKEN_PROGRAM_ID,
+      //   })
       //   .rpc();
       
-      alert('Collateral withdrawal successful!');
+      alert('Collateral withdrawal successful! (Simulated)');
       setShowWithdrawCollateralModal(false);
       setWithdrawCollateralAmount('');
+      loadBorrowerState();
     } catch (error) {
       console.error('Withdraw collateral error:', error);
       alert('Withdrawal failed: ' + (error as Error).message);
@@ -160,7 +259,7 @@ export default function BorrowPage() {
     }
   };
 
-  if (!connected) {
+  if (!isConnected) {
     return (
       <div className="container">
         <div className="row justify-content-center mt-5">

@@ -5,6 +5,7 @@ import { StatsCard } from '@/components/StatsCard';
 import { TransactionModal } from '@/components/TransactionModal';
 import { ConnectButton } from '@/components/ConnectButton';
 import { ZkTlsButton } from '@/components/ZkTlsButton';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 interface Credential {
   proofHash: string;
@@ -15,7 +16,7 @@ interface Credential {
 }
 
 export default function CredentialPage() {
-  const [connected, setConnected] = useState(false);
+  const { address, isConnected } = useAppKitAccount();
   const [loading, setLoading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [proofData, setProofData] = useState('');
@@ -26,20 +27,37 @@ export default function CredentialPage() {
   const [verifiedCredentials, setVerifiedCredentials] = useState(0);
 
   useEffect(() => {
-    // Check wallet connection
-    setConnected(false); // TODO: Replace with actual wallet check
-  }, []);
-
-  useEffect(() => {
-    if (connected) {
+    if (isConnected && address) {
       loadCredentials();
     }
-  }, [connected]);
+  }, [isConnected, address]);
 
   const loadCredentials = async () => {
     setLoading(true);
     try {
-      // TODO: Fetch credentials from Solana
+      // TODO: Fetch credentials from Solana blockchain
+      // const connection = new Connection('https://api.devnet.solana.com');
+      // const program = new Program(idl, programId, { connection });
+      // 
+      // Fetch all credentials for the connected wallet
+      // const credentials = await program.account.zkCredential.all([
+      //   {
+      //     memcmp: {
+      //       offset: 8, // Discriminator offset
+      //       bytes: wallet.publicKey.toBase58(),
+      //     }
+      //   }
+      // ]);
+      // 
+      // setCredentials(credentials.map(c => ({
+      //   proofHash: Buffer.from(c.account.proofHash).toString('hex'),
+      //   timestamp: c.account.timestamp,
+      //   isVerified: c.account.isVerified,
+      //   owner: c.account.owner.toBase58(),
+      //   proofType: 'Payroll'
+      // })));
+      
+      console.log('Loading credentials for:', address);
       // Placeholder data
       setCredentials([]);
       setTotalCredentials(0);
@@ -59,23 +77,39 @@ export default function CredentialPage() {
 
     setLoading(true);
     try {
-      // TODO: Call store_zk_tls_proof_and_public_output from the contract
+      // TODO: Implement actual contract call
+      // Call store_zk_tls_proof_and_public_output from the ZK Credential Manager contract
       console.log('Storing proof...');
       
-      // Create proof hash (placeholder - should use actual hash function)
-      const proofHash = new Array(32).fill(0);
+      // Create proof hash from the proof data
+      // const encoder = new TextEncoder();
+      // const data = encoder.encode(proofData + publicOutput);
+      // const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      // const proofHash = Array.from(new Uint8Array(hashBuffer));
       
-      // Placeholder for contract call
+      // Convert proof data and public output to bytes
+      const proofHash = new Array(32).fill(0); // Placeholder
+      
+      // Required accounts:
+      // - credential: The credential PDA (to be created)
+      // - owner: Signer (wallet)
+      // - system_program: System program
+      
+      // Example implementation:
       // const tx = await program.methods
       //   .storeZkTlsProofAndPublicOutput(
-      //     Array.from(Buffer.from(proofData)),
-      //     Array.from(Buffer.from(publicOutput)),
+      //     Array.from(Buffer.from(JSON.stringify(JSON.parse(proofData)))),
+      //     Array.from(Buffer.from(JSON.stringify(JSON.parse(publicOutput)))),
       //     proofHash
       //   )
-      //   .accounts({ ... })
+      //   .accounts({
+      //     credential: credentialPDA,
+      //     owner: wallet.publicKey,
+      //     systemProgram: SystemProgram.programId,
+      //   })
       //   .rpc();
       
-      alert('Credential stored successfully!');
+      alert('Credential stored successfully! (Simulated)');
       setShowUploadModal(false);
       setProofData('');
       setPublicOutput('');
@@ -91,16 +125,24 @@ export default function CredentialPage() {
   const handleVerifyCredential = async (proofHash: string) => {
     setLoading(true);
     try {
-      // TODO: Call verify_credential from the contract
+      // TODO: Implement actual contract call
+      // Call verify_credential from the ZK Credential Manager contract
       console.log('Verifying credential:', proofHash);
       
-      // Placeholder for contract call
+      // Required accounts:
+      // - credential: The credential PDA
+      // - authority: Authority signer (only authority can verify)
+      
+      // Example implementation:
       // const tx = await program.methods
       //   .verifyCredential()
-      //   .accounts({ ... })
+      //   .accounts({
+      //     credential: credentialPDA,
+      //     authority: authorityPublicKey,
+      //   })
       //   .rpc();
       
-      alert('Credential verified successfully!');
+      alert('Credential verified successfully! (Simulated)');
       loadCredentials();
     } catch (error) {
       console.error('Verify credential error:', error);
@@ -117,16 +159,24 @@ export default function CredentialPage() {
 
     setLoading(true);
     try {
-      // TODO: Call revoke_credential from the contract
+      // TODO: Implement actual contract call
+      // Call revoke_credential from the ZK Credential Manager contract
       console.log('Revoking credential:', proofHash);
       
-      // Placeholder for contract call
+      // Required accounts:
+      // - credential: The credential PDA
+      // - owner: Owner signer (only owner can revoke their own credential)
+      
+      // Example implementation:
       // const tx = await program.methods
       //   .revokeCredential()
-      //   .accounts({ ... })
+      //   .accounts({
+      //     credential: credentialPDA,
+      //     owner: wallet.publicKey,
+      //   })
       //   .rpc();
       
-      alert('Credential revoked successfully!');
+      alert('Credential revoked successfully! (Simulated)');
       loadCredentials();
     } catch (error) {
       console.error('Revoke credential error:', error);
@@ -151,7 +201,7 @@ export default function CredentialPage() {
     return `${hash.substring(0, 8)}...${hash.substring(hash.length - 8)}`;
   };
 
-  if (!connected) {
+  if (!isConnected) {
     return (
       <div className="container">
         <div className="row justify-content-center mt-5">

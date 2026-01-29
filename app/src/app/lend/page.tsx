@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { StatsCard } from '@/components/StatsCard';
 import { TransactionModal } from '@/components/TransactionModal';
 import { ConnectButton } from '@/components/ConnectButton';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 interface LendingPool {
   address: string;
@@ -13,10 +14,17 @@ interface LendingPool {
   interestRate: string;
   utilization: string;
   apy: string;
+  minDeposit: string;
+}
+
+interface DepositorAccount {
+  depositor: string;
+  depositedAmount: string;
+  depositTimestamp: number;
 }
 
 export default function LendPage() {
-  const [connected, setConnected] = useState(false);
+  const { address, isConnected } = useAppKitAccount();
   const [loading, setLoading] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -24,23 +32,43 @@ export default function LendPage() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [userDeposit, setUserDeposit] = useState('0.00');
   const [earnedInterest, setEarnedInterest] = useState('0.00');
+  const [depositorAccount, setDepositorAccount] = useState<DepositorAccount | null>(null);
 
   const [pools, setPools] = useState<LendingPool[]>([
     {
-      address: 'Pool1...',
+      address: 'G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi',
       tokenMint: 'USDC',
       totalDeposits: '1,250,000',
       totalBorrowed: '400,000',
-      interestRate: '5.2',
+      interestRate: '520',
       utilization: '32',
-      apy: '5.2'
+      apy: '5.2',
+      minDeposit: '100'
     }
   ]);
 
   useEffect(() => {
-    // Check wallet connection
-    setConnected(false); // TODO: Replace with actual wallet check
-  }, []);
+    if (isConnected && address) {
+      loadUserDeposits();
+    }
+  }, [isConnected, address]);
+
+  const loadUserDeposits = async () => {
+    try {
+      // TODO: Fetch user deposits from Solana
+      // const connection = new Connection('https://api.devnet.solana.com');
+      // const program = new Program(idl, programId, { connection });
+      // const [depositorPDA] = await PublicKey.findProgramAddress(
+      //   [Buffer.from('depositor'), wallet.publicKey.toBuffer(), lendingPoolPubkey.toBuffer()],
+      //   program.programId
+      // );
+      // const account = await program.account.depositorAccount.fetch(depositorPDA);
+      // setUserDeposit((account.depositedAmount / 1e9).toFixed(2));
+      console.log('Loading user deposits for:', address);
+    } catch (error) {
+      console.error('Error loading deposits:', error);
+    }
+  };
 
   const handleDeposit = async () => {
     if (!depositAmount || parseFloat(depositAmount) <= 0) {
@@ -50,18 +78,36 @@ export default function LendPage() {
 
     setLoading(true);
     try {
-      // TODO: Call deposit_into_lending_pool from the contract
-      console.log('Depositing:', depositAmount);
+      // TODO: Implement actual contract call
+      // Call deposit_into_lending_pool from the Lending contract
+      console.log('Depositing:', depositAmount, 'to pool');
       
-      // Placeholder for contract call
+      // Required accounts:
+      // - lending_pool: The lending pool PDA
+      // - depositor_account: The depositor account PDA (created or updated)
+      // - depositor: Signer
+      // - depositor_token_account: User's token account
+      // - pool_vault: Pool's token vault
+      // - token_program: Token program
+      
+      // Example implementation:
       // const tx = await program.methods
-      //   .depositIntoLendingPool(new BN(depositAmount))
-      //   .accounts({ ... })
+      //   .depositIntoLendingPool(new BN(parseFloat(depositAmount) * 1e9))
+      //   .accounts({
+      //     lendingPool: lendingPoolPDA,
+      //     depositorAccount: depositorPDA,
+      //     depositor: wallet.publicKey,
+      //     depositorTokenAccount: userTokenAccount,
+      //     poolVault: poolVault,
+      //     tokenProgram: TOKEN_PROGRAM_ID,
+      //     systemProgram: SystemProgram.programId,
+      //   })
       //   .rpc();
       
-      alert('Deposit successful!');
+      alert('Deposit successful! (Simulated)');
       setShowDepositModal(false);
       setDepositAmount('');
+      loadUserDeposits();
     } catch (error) {
       console.error('Deposit error:', error);
       alert('Deposit failed: ' + (error as Error).message);
@@ -78,18 +124,35 @@ export default function LendPage() {
 
     setLoading(true);
     try {
-      // TODO: Call withdraw_from_lending_pool from the contract
-      console.log('Withdrawing:', withdrawAmount);
+      // TODO: Implement actual contract call
+      // Call withdraw_from_lending_pool from the Lending contract
+      console.log('Withdrawing:', withdrawAmount, 'from pool');
       
-      // Placeholder for contract call
+      // Required accounts:
+      // - lending_pool: The lending pool PDA
+      // - depositor_account: The depositor account PDA
+      // - depositor: Signer
+      // - depositor_token_account: User's token account
+      // - pool_vault: Pool's token vault
+      // - token_program: Token program
+      
+      // Example implementation:
       // const tx = await program.methods
-      //   .withdrawFromLendingPool(new BN(withdrawAmount))
-      //   .accounts({ ... })
+      //   .withdrawFromLendingPool(new BN(parseFloat(withdrawAmount) * 1e9))
+      //   .accounts({
+      //     lendingPool: lendingPoolPDA,
+      //     depositorAccount: depositorPDA,
+      //     depositor: wallet.publicKey,
+      //     depositorTokenAccount: userTokenAccount,
+      //     poolVault: poolVault,
+      //     tokenProgram: TOKEN_PROGRAM_ID,
+      //   })
       //   .rpc();
       
-      alert('Withdrawal successful!');
+      alert('Withdrawal successful! (Simulated)');
       setShowWithdrawModal(false);
       setWithdrawAmount('');
+      loadUserDeposits();
     } catch (error) {
       console.error('Withdraw error:', error);
       alert('Withdrawal failed: ' + (error as Error).message);
@@ -98,7 +161,7 @@ export default function LendPage() {
     }
   };
 
-  if (!connected) {
+  if (!isConnected) {
     return (
       <div className="container">
         <div className="row justify-content-center mt-5">
