@@ -18,8 +18,8 @@ borrowing = "CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-wallet = "~/.config/solana/id.json"
+cluster = "Devnet"
+wallet = "deployer-keypair.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
