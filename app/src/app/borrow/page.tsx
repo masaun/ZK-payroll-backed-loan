@@ -110,9 +110,7 @@ export default function BorrowPage() {
       console.log('Generating ZK proof for payroll verification...');
       
       // Create sample inputs (in production, this would come from zkTLS or other sources)
-      const proofInputs = createSamplePayrollBackedLoanInputs(
-        `nullifier_${Date.now()}_${Math.random()}`
-      );
+      const proofInputs = await createSamplePayrollBackedLoanInputs();
       
       // Generate and verify proof with progress tracking
       const proofResult = await generateAndVerifyPayrollBackedLoanProof(
@@ -124,7 +122,9 @@ export default function BorrowPage() {
       );
       
       if (!proofResult.success) {
-        throw new Error('ZK proof generation or verification failed');
+        const errorMsg = proofResult.error || 'ZK proof generation or verification failed';
+        console.error('Proof generation failed:', errorMsg);
+        throw new Error(errorMsg);
       }
       
       console.log('ZK proof generated and verified successfully');
