@@ -1,8 +1,6 @@
 import { Noir } from '@noir-lang/noir_js';
-import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
+import { UltraHonkBackend, type ProofData, Barretenberg } from '@aztec/bb.js';
 import circuit from '@/circuits/circuit-artifacts/payroll-backed-loan-0.0.1/payroll-backed-loan.json';
-import vk from '@/circuits/circuit-artifacts/payroll-backed-loan-0.0.1/vk.json';
-import { buildPoseidon } from 'circomlibjs';
 
 /**
  * Progress callback type for ZK proof generation
@@ -94,7 +92,7 @@ export interface PayrollBackedLoanProofInputs {
  * Result of ZK proof generation
  */
 export interface ProofGenerationResult {
-  proof: Uint8Array;
+  proof: ProofData; // Using ProofData from @aztec/bb.js
   publicInputs: Record<string, string>;
 }
 
@@ -111,12 +109,16 @@ export async function generatePayrollBackedLoanProof(
   try {
     onProgress?.('Initializing backend', 0);
 
-    // Initialize the backend with the circuit
-    const backend = new BarretenbergBackend(circuit as any);
+    // Initialize Barretenberg API
+    const api = await Barretenberg.new();
+    
+    // Initialize UltraHonkBackend with circuit bytecode and API
+    const backend = new UltraHonkBackend(circuit.bytecode, api);
     
     onProgress?.('Setting up proving system', 20);
 
     // Initialize Noir with the circuit
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const noir = new Noir(circuit as any);
 
     onProgress?.('Preparing inputs', 40);
@@ -166,7 +168,7 @@ export async function generatePayrollBackedLoanProof(
     
     onProgress?.('Creating proof', 80);
 
-    // Generate the proof using the backend
+    // Generate the proof using UltraHonkBackend
     const proof = await backend.generateProof(witness);
 
     onProgress?.('Proof generated successfully', 100);
@@ -176,11 +178,11 @@ export async function generatePayrollBackedLoanProof(
       nullifier: inputs.public_inputs.nullifier,
     };
 
-    // Destroy backend to free memory
-    await backend.destroy();
+    // Cleanup API
+    await api.destroy();
 
     return {
-      proof: proof.proof,
+      proof, // ProofData object
       publicInputs,
     };
   } catch (error) {
@@ -191,36 +193,36 @@ export async function generatePayrollBackedLoanProof(
 
 /**
  * Verify a ZK proof for payroll-backed loan
- * @param proof - The proof to verify
- * @param publicInputs - The public inputs used in the proof
+ * @param proof - The ProofData object from @aztec/bb.js
+ * @param publicInputs - The public inputs used in the proof (not used with UltraHonkBackend but kept for API compatibility)
  * @param onProgress - Optional callback to track progress
  * @returns True if the proof is valid, false otherwise
  */
 export async function verifyPayrollBackedLoanProof(
-  proof: Uint8Array,
+  proof: ProofData,
   publicInputs: Record<string, string>,
   onProgress?: ProgressCallback
 ): Promise<boolean> {
   try {
     onProgress?.('Initializing verifier', 0);
 
-    // Initialize the backend with the circuit
-    const backend = new BarretenbergBackend(circuit as any);
+    // Initialize Barretenberg API
+    const api = await Barretenberg.new();
+    
+    // Initialize UltraHonkBackend with circuit bytecode and API
+    const backend = new UltraHonkBackend(circuit.bytecode, api);
     
     onProgress?.('Loading verification key', 30);
 
     onProgress?.('Verifying proof', 60);
 
-    // Verify the proof using the backend
-    const isValid = await backend.verifyProof({
-      proof,
-      publicInputs: Object.values(publicInputs),
-    });
+    // Verify the proof using UltraHonkBackend
+    const isValid = await backend.verifyProof(proof);
 
     onProgress?.('Verification complete', 100);
 
-    // Cleanup
-    await backend.destroy();
+    // Cleanup API
+    await api.destroy();
 
     return isValid;
   } catch (error) {
@@ -292,7 +294,7 @@ export async function createSamplePayrollBackedLoanInputs(): Promise<PayrollBack
 export async function generateAndVerifyPayrollBackedLoanProof(
   inputs: PayrollBackedLoanProofInputs,
   onProgress?: ProgressCallback
-): Promise<{ success: boolean; proof?: Uint8Array; publicInputs?: Record<string, string>; error?: string }> {
+): Promise<{ success: boolean; proof?: ProofData; publicInputs?: Record<string, string>; error?: string }> {
   try {
     // Generate proof (0-70% of progress)
     const result = await generatePayrollBackedLoanProof(inputs, (stage, progress) => {
