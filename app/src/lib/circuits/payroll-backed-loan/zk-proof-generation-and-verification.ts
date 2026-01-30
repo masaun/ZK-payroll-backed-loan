@@ -1,5 +1,5 @@
 import { Noir } from '@noir-lang/noir_js';
-import { BarretenbergBackend, BarretenbergVerifier } from '@noir-lang/backend_barretenberg';
+import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import circuit from '@/circuits/circuit-artifacts/payroll-backed-loan-0.0.1/payroll-backed-loan.json';
 import vk from '@/circuits/circuit-artifacts/payroll-backed-loan-0.0.1/vk.json';
 
@@ -133,18 +133,13 @@ export async function verifyPayrollBackedLoanProof(
     
     onProgress?.('Loading verification key', 30);
 
-    // Initialize the verifier with the verification key
-    const verifier = new BarretenbergVerifier({
-      crsPath: undefined, // Will use default CRS
-    });
-
     onProgress?.('Verifying proof', 60);
 
-    // Verify the proof
-    const isValid = await verifier.verifyProof({
+    // Verify the proof using the backend
+    const isValid = await backend.verifyProof({
       proof,
-      publicInputs: Object.values(publicInputs).map(v => v),
-    }, vk as any);
+      publicInputs: Object.values(publicInputs),
+    });
 
     onProgress?.('Verification complete', 100);
 
