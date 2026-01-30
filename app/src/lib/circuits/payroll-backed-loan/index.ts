@@ -5,11 +5,11 @@
  */
 
 export {
-  generatePayrollProof,
-  verifyPayrollProof,
-  generateAndVerifyPayrollProof,
-  createSamplePayrollInputs,
-  type PayrollProofInputs,
+  generatePayrollBackedLoanProof,
+  verifyPayrollBackedLoanProof,
+  generateAndVerifyPayrollBackedLoanProof,
+  createSamplePayrollBackedLoanInputs,
+  type PayrollBackedLoanProofInputs,
   type ProofGenerationResult,
   type ProgressCallback,
 } from './zk-proof-generation-and-verification';

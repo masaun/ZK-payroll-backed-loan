@@ -11,7 +11,7 @@ export type ProgressCallback = (stage: string, progress: number) => void;
 /**
  * Input structure for payroll-backed loan ZK proof
  */
-export interface PayrollProofInputs {
+export interface PayrollBackedLoanProofInputs {
   // Public inputs
   public_inputs: {
     nullifier: string; // Field element as string
@@ -46,8 +46,8 @@ export interface ProofGenerationResult {
  * @param onProgress - Optional callback to track progress
  * @returns The generated proof and public inputs
  */
-export async function generatePayrollProof(
-  inputs: PayrollProofInputs,
+export async function generatePayrollBackedLoanProof(
+  inputs: PayrollBackedLoanProofInputs,
   onProgress?: ProgressCallback
 ): Promise<ProofGenerationResult> {
   try {
@@ -120,7 +120,7 @@ export async function generatePayrollProof(
  * @param onProgress - Optional callback to track progress
  * @returns True if the proof is valid, false otherwise
  */
-export async function verifyPayrollProof(
+export async function verifyPayrollBackedLoanProof(
   proof: Uint8Array,
   publicInputs: Record<string, string>,
   onProgress?: ProgressCallback
@@ -162,9 +162,9 @@ export async function verifyPayrollProof(
  * Helper function to create sample payroll proof inputs for testing
  * This should be replaced with actual data from zkTLS or other sources
  */
-export function createSamplePayrollInputs(
+export function createSamplePayrollBackedLoanInputs(
   nullifier: string = '0x123456789abcdef'
-): PayrollProofInputs {
+): PayrollBackedLoanProofInputs {
   // Generate sample payroll proof (64 field elements)
   const payrollProof = Array(64).fill('0');
   
@@ -207,20 +207,20 @@ export function createSamplePayrollInputs(
  * @param onProgress - Optional callback to track overall progress
  * @returns True if proof was generated and verified successfully
  */
-export async function generateAndVerifyPayrollProof(
-  inputs: PayrollProofInputs,
+export async function generateAndVerifyPayrollBackedLoanProof(
+  inputs: PayrollBackedLoanProofInputs,
   onProgress?: ProgressCallback
 ): Promise<{ success: boolean; proof?: Uint8Array; publicInputs?: Record<string, string> }> {
   try {
     // Generate proof (0-70% of progress)
-    const result = await generatePayrollProof(inputs, (stage, progress) => {
+    const result = await generatePayrollBackedLoanProof(inputs, (stage, progress) => {
       onProgress?.(stage, progress * 0.7);
     });
 
     onProgress?.('Starting verification', 70);
 
     // Verify proof (70-100% of progress)
-    const isValid = await verifyPayrollProof(
+    const isValid = await verifyPayrollBackedLoanProof(
       result.proof,
       result.publicInputs,
       (stage, progress) => {

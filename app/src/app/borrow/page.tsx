@@ -9,9 +9,9 @@ import { useAppKitAccount } from '@reown/appkit/react';
 import { useBorrowing, type CollateralPool, type BorrowerState } from '@/hooks/useBorrowing';
 import { PROGRAM_IDS } from '@/config';
 import { 
-  generateAndVerifyPayrollProof, 
-  createSamplePayrollInputs,
-  type PayrollProofInputs 
+  generateAndVerifyPayrollBackedLoanProof, 
+  createSamplePayrollBackedLoanInputs,
+  type PayrollBackedLoanProofInputs 
 } from '@/lib/circuits/payroll-backed-loan/zk-proof-generation-and-verification';
 
 export default function BorrowPage() {
@@ -110,12 +110,12 @@ export default function BorrowPage() {
       console.log('Generating ZK proof for payroll verification...');
       
       // Create sample inputs (in production, this would come from zkTLS or other sources)
-      const proofInputs = createSamplePayrollInputs(
+      const proofInputs = createSamplePayrollBackedLoanInputs(
         `nullifier_${Date.now()}_${Math.random()}`
       );
       
       // Generate and verify proof with progress tracking
-      const proofResult = await generateAndVerifyPayrollProof(
+      const proofResult = await generateAndVerifyPayrollBackedLoanProof(
         proofInputs,
         (stage, progress) => {
           setZkProofStage(stage);
