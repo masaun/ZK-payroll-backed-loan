@@ -5,26 +5,12 @@ import { StatsCard } from '@/components/StatsCard';
 import { TransactionModal } from '@/components/TransactionModal';
 import { ConnectButton } from '@/components/ConnectButton';
 import { useAppKitAccount } from '@reown/appkit/react';
-
-interface LendingPool {
-  address: string;
-  tokenMint: string;
-  totalDeposits: string;
-  totalBorrowed: string;
-  interestRate: string;
-  utilization: string;
-  apy: string;
-  minDeposit: string;
-}
-
-interface DepositorAccount {
-  depositor: string;
-  depositedAmount: string;
-  depositTimestamp: number;
-}
+import { useLending, type LendingPool, type DepositorAccount } from '@/hooks/useLending';
+import { PROGRAM_IDS } from '@/config';
 
 export default function LendPage() {
   const { address, isConnected } = useAppKitAccount();
+  const lending = useLending();
   const [loading, setLoading] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -36,7 +22,7 @@ export default function LendPage() {
 
   const [pools, setPools] = useState<LendingPool[]>([
     {
-      address: 'G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi',
+      address: PROGRAM_IDS.lending,
       tokenMint: 'USDC',
       totalDeposits: '1,250,000',
       totalBorrowed: '400,000',
@@ -55,16 +41,12 @@ export default function LendPage() {
 
   const loadUserDeposits = async () => {
     try {
-      // TODO: Fetch user deposits from Solana
-      // const connection = new Connection('https://api.devnet.solana.com');
-      // const program = new Program(idl, programId, { connection });
-      // const [depositorPDA] = await PublicKey.findProgramAddress(
-      //   [Buffer.from('depositor'), wallet.publicKey.toBuffer(), lendingPoolPubkey.toBuffer()],
-      //   program.programId
-      // );
-      // const account = await program.account.depositorAccount.fetch(depositorPDA);
-      // setUserDeposit((account.depositedAmount / 1e9).toFixed(2));
-      console.log('Loading user deposits for:', address);
+      console.log('Loading user deposits from contract:', PROGRAM_IDS.lending);
+      const account = await lending.loadUserDeposits(PROGRAM_IDS.lending);
+      setDepositorAccount(account);
+      if (account) {
+        setUserDeposit((parseFloat(account.depositedAmount) / 1e9).toFixed(2));
+      }
     } catch (error) {
       console.error('Error loading deposits:', error);
     }
@@ -78,33 +60,10 @@ export default function LendPage() {
 
     setLoading(true);
     try {
-      // TODO: Implement actual contract call
-      // Call deposit_into_lending_pool from the Lending contract
-      console.log('Depositing:', depositAmount, 'to pool');
+      console.log('Depositing to contract:', PROGRAM_IDS.lending);
+      const signature = await lending.deposit(PROGRAM_IDS.lending, parseFloat(depositAmount));
       
-      // Required accounts:
-      // - lending_pool: The lending pool PDA
-      // - depositor_account: The depositor account PDA (created or updated)
-      // - depositor: Signer
-      // - depositor_token_account: User's token account
-      // - pool_vault: Pool's token vault
-      // - token_program: Token program
-      
-      // Example implementation:
-      // const tx = await program.methods
-      //   .depositIntoLendingPool(new BN(parseFloat(depositAmount) * 1e9))
-      //   .accounts({
-      //     lendingPool: lendingPoolPDA,
-      //     depositorAccount: depositorPDA,
-      //     depositor: wallet.publicKey,
-      //     depositorTokenAccount: userTokenAccount,
-      //     poolVault: poolVault,
-      //     tokenProgram: TOKEN_PROGRAM_ID,
-      //     systemProgram: SystemProgram.programId,
-      //   })
-      //   .rpc();
-      
-      alert('Deposit successful! (Simulated)');
+      alert(`Deposit successful!\nTransaction: ${signature}`);
       setShowDepositModal(false);
       setDepositAmount('');
       loadUserDeposits();
@@ -124,32 +83,10 @@ export default function LendPage() {
 
     setLoading(true);
     try {
-      // TODO: Implement actual contract call
-      // Call withdraw_from_lending_pool from the Lending contract
-      console.log('Withdrawing:', withdrawAmount, 'from pool');
+      console.log('Withdrawing from contract:', PROGRAM_IDS.lending);
+      const signature = await lending.withdraw(PROGRAM_IDS.lending, parseFloat(withdrawAmount));
       
-      // Required accounts:
-      // - lending_pool: The lending pool PDA
-      // - depositor_account: The depositor account PDA
-      // - depositor: Signer
-      // - depositor_token_account: User's token account
-      // - pool_vault: Pool's token vault
-      // - token_program: Token program
-      
-      // Example implementation:
-      // const tx = await program.methods
-      //   .withdrawFromLendingPool(new BN(parseFloat(withdrawAmount) * 1e9))
-      //   .accounts({
-      //     lendingPool: lendingPoolPDA,
-      //     depositorAccount: depositorPDA,
-      //     depositor: wallet.publicKey,
-      //     depositorTokenAccount: userTokenAccount,
-      //     poolVault: poolVault,
-      //     tokenProgram: TOKEN_PROGRAM_ID,
-      //   })
-      //   .rpc();
-      
-      alert('Withdrawal successful! (Simulated)');
+      alert(`Withdrawal successful!\nTransaction: ${signature}`);
       setShowWithdrawModal(false);
       setWithdrawAmount('');
       loadUserDeposits();

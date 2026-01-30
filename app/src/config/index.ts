@@ -14,3 +14,10 @@ export const networks = [solana, solanaTestnet, solanaDevnet] as [AppKitNetwork,
 
 // Set up Solana Adapter
 export const solanaWeb3JsAdapter = new SolanaAdapter()
+
+// Solana Program IDs (Devnet)
+export const PROGRAM_IDS = {
+  zkCredentialManager: process.env.NEXT_PUBLIC_ZK_CREDENTIAL_PROGRAM_ID || "HskmoEBbJFB9LYssgyy1AwUthUMEbUPNwsF9YMPELHcR",
+  lending: process.env.NEXT_PUBLIC_LENDING_PROGRAM_ID || "GGmcpKrSS1MsNv9LLvzcpEGRGr3BqBasky9tX6DVw8AF",
+  borrowing: process.env.NEXT_PUBLIC_BORROWING_PROGRAM_ID || "HBY7P5xzgxhmaSXFiGE3HeWrmhNScYh3r6amyp4q7e4x"
+} as const
