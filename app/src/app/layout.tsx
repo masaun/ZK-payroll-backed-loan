@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 
 import './globals.css';
-import ContextProvider from '@/context'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import ContextProvider from '@/context';
+import { Navigation } from '@/components/Navigation';
 
 export const metadata: Metadata = {
-  title: "AppKit in Next.js + Solana",
-  description: "AppKit example dApp",
+  title: "ZK Payroll-Backed Loan",
+  description: "Privacy-preserving payroll-backed lending platform",
 };
 
 export default async function RootLayout({
@@ -16,7 +18,12 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ContextProvider>{children}</ContextProvider>
+        <ContextProvider>
+          <Navigation />
+          <main className="container-fluid py-4" style={{ maxWidth: '1400px' }}>
+            {children}
+          </main>
+        </ContextProvider>
       </body>
     </html>
   );

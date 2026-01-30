@@ -13,10 +13,13 @@
     "@reown/appkit": "1.8.16",
     "@reown/appkit-adapter-solana": "1.8.16",
     "@solana/web3.js": "^1.98.0",
+    "@types/bootstrap": "^5.2.10",
     "@types/circomlibjs": "^0.1.6",
+    "bootstrap": "^5.3.8",
     "circomlibjs": "^0.1.7",
     "next": "15.3.8",
     "react": "19.2.1",
+    "react-bootstrap": "^2.10.10",
     "react-dom": "19.2.1"
   },
   "devDependencies": {
