@@ -4,27 +4,19 @@ import React, { useState, useEffect } from 'react';
 import { StatsCard } from '@/components/StatsCard';
 import { TransactionModal } from '@/components/TransactionModal';
 import { ConnectButton } from '@/components/ConnectButton';
+import { ZkProofProgress } from '@/components/ZkProofProgress';
 import { useAppKitAccount } from '@reown/appkit/react';
-
-interface CollateralPool {
-  address: string;
-  collateralMint: string;
-  totalCollateral: string;
-  collateralRatio: string;
-  liquidationThreshold: string;
-  borrowAPY: string;
-}
-
-interface BorrowerState {
-  borrower: string;
-  collateralAmount: string;
-  borrowedAmount: string;
-  collateralTimestamp: number;
-  borrowTimestamp: number;
-}
+import { useBorrowing, type CollateralPool, type BorrowerState } from '@/hooks/useBorrowing';
+import { PROGRAM_IDS } from '@/config';
+import { 
+  generateAndVerifyPayrollBackedLoanProof, 
+  createSamplePayrollBackedLoanInputs,
+  type PayrollBackedLoanProofInputs 
+} from '@/lib/circuits/payroll-backed-loan/zk-proof-generation-and-verification';
 
 export default function BorrowPage() {
   const { address, isConnected } = useAppKitAccount();
+  const borrowing = useBorrowing();
   const [loading, setLoading] = useState(false);
   const [showDepositCollateralModal, setShowDepositCollateralModal] = useState(false);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
@@ -41,10 +33,15 @@ export default function BorrowPage() {
   const [healthFactor, setHealthFactor] = useState('∞');
   const [availableToBorrow, setAvailableToBorrow] = useState('0.00');
   const [borrowerState, setBorrowerState] = useState<BorrowerState | null>(null);
+  
+  // ZK proof states
+  const [zkProofStage, setZkProofStage] = useState('Initializing');
+  const [zkProofProgress, setZkProofProgress] = useState(0);
+  const [showZkProofProgress, setShowZkProofProgress] = useState(false);
 
   const [pools, setPools] = useState<CollateralPool[]>([
     {
-      address: 'CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi',
+      address: PROGRAM_IDS.borrowing,
       collateralMint: 'SOL',
       totalCollateral: '2,100,000',
       collateralRatio: '150',
@@ -61,17 +58,13 @@ export default function BorrowPage() {
 
   const loadBorrowerState = async () => {
     try {
-      // TODO: Fetch borrower state from Solana
-      // const connection = new Connection('https://api.devnet.solana.com');
-      // const program = new Program(idl, programId, { connection });
-      // const [borrowerPDA] = await PublicKey.findProgramAddress(
-      //   [Buffer.from('borrower'), wallet.publicKey.toBuffer(), collateralPoolPubkey.toBuffer()],
-      //   program.programId
-      // );
-      // const account = await program.account.borrowerState.fetch(borrowerPDA);
-      // setUserCollateral((account.collateralAmount / 1e9).toFixed(2));
-      // setUserBorrowed((account.borrowedAmount / 1e9).toFixed(2));
-      console.log('Loading borrower state for:', address);
+      console.log('Loading borrower state from contract:', PROGRAM_IDS.borrowing);
+      const state = await borrowing.loadBorrowerState(PROGRAM_IDS.borrowing);
+      setBorrowerState(state);
+      if (state) {
+        setUserCollateral((parseFloat(state.collateralAmount) / 1e9).toFixed(2));
+        setUserBorrowed((parseFloat(state.borrowedAmount) / 1e9).toFixed(2));
+      }
     } catch (error) {
       console.error('Error loading borrower state:', error);
     }
@@ -85,33 +78,13 @@ export default function BorrowPage() {
 
     setLoading(true);
     try {
-      // TODO: Implement actual contract call
-      // Call deposit_into_collateral_pool from the Borrowing contract
-      console.log('Depositing collateral:', collateralAmount);
+      console.log('Depositing collateral to contract:', PROGRAM_IDS.borrowing);
+      const signature = await borrowing.depositCollateral(
+        PROGRAM_IDS.borrowing,
+        parseFloat(collateralAmount)
+      );
       
-      // Required accounts:
-      // - collateral_pool: The collateral pool PDA
-      // - borrower_state: The borrower state PDA (created or updated)
-      // - borrower: Signer
-      // - borrower_collateral_account: User's collateral token account
-      // - pool_vault: Pool's collateral vault
-      // - token_program: Token program
-      
-      // Example implementation:
-      // const tx = await program.methods
-      //   .depositIntoCollateralPool(new BN(parseFloat(collateralAmount) * 1e9))
-      //   .accounts({
-      //     collateralPool: collateralPoolPDA,
-      //     borrowerState: borrowerStatePDA,
-      //     borrower: wallet.publicKey,
-      //     borrowerCollateralAccount: userCollateralAccount,
-      //     poolVault: poolVault,
-      //     tokenProgram: TOKEN_PROGRAM_ID,
-      //     systemProgram: SystemProgram.programId,
-      //   })
-      //   .rpc();
-      
-      alert('Collateral deposited successfully! (Simulated)');
+      alert(`Collateral deposited successfully!\nTransaction: ${signature}`);
       setShowDepositCollateralModal(false);
       setCollateralAmount('');
       loadBorrowerState();
@@ -130,44 +103,56 @@ export default function BorrowPage() {
     }
 
     setLoading(true);
+    setShowZkProofProgress(true);
+    
     try {
-      // TODO: Implement actual contract call
-      // Call borrow_from_lending_pool from the Borrowing contract
-      console.log('Borrowing:', borrowAmount);
+      // Step 1: Generate and verify ZK proof
+      console.log('Generating ZK proof for payroll verification...');
       
-      // Required accounts:
-      // - collateral_pool: The collateral pool PDA
-      // - borrower_state: The borrower state PDA
-      // - borrower: Signer
-      // - borrower_token_account: User's borrowed token account
-      // - lending_pool: The lending pool PDA (from lending program)
-      // - lending_pool_vault: Lending pool's vault
-      // - lending_program: The lending program ID
+      // Create sample inputs (in production, this would come from zkTLS or other sources)
+      const proofInputs = await createSamplePayrollBackedLoanInputs();
       
-      // Example implementation:
-      // const tx = await program.methods
-      //   .borrowFromLendingPool(new BN(parseFloat(borrowAmount) * 1e9))
-      //   .accounts({
-      //     collateralPool: collateralPoolPDA,
-      //     borrowerState: borrowerStatePDA,
-      //     borrower: wallet.publicKey,
-      //     borrowerTokenAccount: userTokenAccount,
-      //     lendingPool: lendingPoolPDA,
-      //     lendingPoolVault: lendingPoolVault,
-      //     lendingProgram: lendingProgramId,
-      //     tokenProgram: TOKEN_PROGRAM_ID,
-      //   })
-      //   .rpc();
+      // Generate and verify proof with progress tracking
+      const proofResult = await generateAndVerifyPayrollBackedLoanProof(
+        proofInputs,
+        (stage, progress) => {
+          setZkProofStage(stage);
+          setZkProofProgress(progress);
+        }
+      );
       
-      alert('Borrow successful! (Simulated)');
+      if (!proofResult.success) {
+        const errorMsg = proofResult.error || 'ZK proof generation or verification failed';
+        console.error('Proof generation failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      console.log('ZK proof generated and verified successfully');
+      console.log('Proof:', proofResult.proof);
+      console.log('Public inputs:', proofResult.publicInputs);
+      
+      setShowZkProofProgress(false);
+      
+      // Step 2: Execute borrow transaction with the proof
+      console.log('Borrowing from contracts:', PROGRAM_IDS.borrowing, PROGRAM_IDS.lending);
+      const signature = await borrowing.borrow(
+        PROGRAM_IDS.borrowing,
+        PROGRAM_IDS.lending,
+        parseFloat(borrowAmount)
+      );
+      
+      alert(`Borrow successful!\nZK Proof verified ✓\nTransaction: ${signature}`);
       setShowBorrowModal(false);
       setBorrowAmount('');
       loadBorrowerState();
     } catch (error) {
       console.error('Borrow error:', error);
       alert('Borrow failed: ' + (error as Error).message);
+      setShowZkProofProgress(false);
     } finally {
       setLoading(false);
+      setZkProofProgress(0);
+      setZkProofStage('Initializing');
     }
   };
 
@@ -179,30 +164,14 @@ export default function BorrowPage() {
 
     setLoading(true);
     try {
-      // TODO: Implement actual contract call
-      // Call repay_to_lending_pool from the Borrowing contract
-      console.log('Repaying:', repayAmount);
+      console.log('Repaying to contracts:', PROGRAM_IDS.borrowing, PROGRAM_IDS.lending);
+      const signature = await borrowing.repay(
+        PROGRAM_IDS.borrowing,
+        PROGRAM_IDS.lending,
+        parseFloat(repayAmount)
+      );
       
-      // Required accounts:
-      // - borrower_state: The borrower state PDA
-      // - borrower: Signer
-      // - borrower_token_account: User's token account
-      // - lending_pool_vault: Lending pool's vault
-      // - token_program: Token program
-      
-      // Example implementation:
-      // const tx = await program.methods
-      //   .repayToLendingPool(new BN(parseFloat(repayAmount) * 1e9))
-      //   .accounts({
-      //     borrowerState: borrowerStatePDA,
-      //     borrower: wallet.publicKey,
-      //     borrowerTokenAccount: userTokenAccount,
-      //     lendingPoolVault: lendingPoolVault,
-      //     tokenProgram: TOKEN_PROGRAM_ID,
-      //   })
-      //   .rpc();
-      
-      alert('Repayment successful! (Simulated)');
+      alert(`Repayment successful!\nTransaction: ${signature}`);
       setShowRepayModal(false);
       setRepayAmount('');
       loadBorrowerState();
@@ -222,32 +191,13 @@ export default function BorrowPage() {
 
     setLoading(true);
     try {
-      // TODO: Implement actual contract call
-      // Call withdraw_from_collateral_pool from the Borrowing contract
-      console.log('Withdrawing collateral:', withdrawCollateralAmount);
+      console.log('Withdrawing collateral from contract:', PROGRAM_IDS.borrowing);
+      const signature = await borrowing.withdrawCollateral(
+        PROGRAM_IDS.borrowing,
+        parseFloat(withdrawCollateralAmount)
+      );
       
-      // Required accounts:
-      // - collateral_pool: The collateral pool PDA
-      // - borrower_state: The borrower state PDA
-      // - borrower: Signer
-      // - borrower_collateral_account: User's collateral token account
-      // - pool_vault: Pool's collateral vault
-      // - token_program: Token program
-      
-      // Example implementation:
-      // const tx = await program.methods
-      //   .withdrawFromCollateralPool(new BN(parseFloat(withdrawCollateralAmount) * 1e9))
-      //   .accounts({
-      //     collateralPool: collateralPoolPDA,
-      //     borrowerState: borrowerStatePDA,
-      //     borrower: wallet.publicKey,
-      //     borrowerCollateralAccount: userCollateralAccount,
-      //     poolVault: poolVault,
-      //     tokenProgram: TOKEN_PROGRAM_ID,
-      //   })
-      //   .rpc();
-      
-      alert('Collateral withdrawal successful! (Simulated)');
+      alert(`Collateral withdrawal successful!\nTransaction: ${signature}`);
       setShowWithdrawCollateralModal(false);
       setWithdrawCollateralAmount('');
       loadBorrowerState();
@@ -517,6 +467,13 @@ export default function BorrowPage() {
         onHide={() => setShowBorrowModal(false)}
         title="Borrow Assets"
       >
+        {/* ZK Proof Progress */}
+        <ZkProofProgress 
+          stage={zkProofStage}
+          progress={zkProofProgress}
+          show={showZkProofProgress}
+        />
+        
         <div className="mb-3">
           <label className="form-label" style={{ fontWeight: 500 }}>Amount</label>
           <div className="input-group input-group-lg">

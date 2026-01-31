@@ -6,17 +6,12 @@ import { TransactionModal } from '@/components/TransactionModal';
 import { ConnectButton } from '@/components/ConnectButton';
 import { ZkTlsButton } from '@/components/ZkTlsButton';
 import { useAppKitAccount } from '@reown/appkit/react';
-
-interface Credential {
-  proofHash: string;
-  timestamp: number;
-  isVerified: boolean;
-  owner: string;
-  proofType: string;
-}
+import { useZkCredential, type Credential } from '@/hooks/useZkCredential';
+import { PROGRAM_IDS } from '@/config';
 
 export default function CredentialPage() {
   const { address, isConnected } = useAppKitAccount();
+  const zkCredential = useZkCredential();
   const [loading, setLoading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [proofData, setProofData] = useState('');
@@ -35,33 +30,11 @@ export default function CredentialPage() {
   const loadCredentials = async () => {
     setLoading(true);
     try {
-      // TODO: Fetch credentials from Solana blockchain
-      // const connection = new Connection('https://api.devnet.solana.com');
-      // const program = new Program(idl, programId, { connection });
-      // 
-      // Fetch all credentials for the connected wallet
-      // const credentials = await program.account.zkCredential.all([
-      //   {
-      //     memcmp: {
-      //       offset: 8, // Discriminator offset
-      //       bytes: wallet.publicKey.toBase58(),
-      //     }
-      //   }
-      // ]);
-      // 
-      // setCredentials(credentials.map(c => ({
-      //   proofHash: Buffer.from(c.account.proofHash).toString('hex'),
-      //   timestamp: c.account.timestamp,
-      //   isVerified: c.account.isVerified,
-      //   owner: c.account.owner.toBase58(),
-      //   proofType: 'Payroll'
-      // })));
-      
-      console.log('Loading credentials for:', address);
-      // Placeholder data
-      setCredentials([]);
-      setTotalCredentials(0);
-      setVerifiedCredentials(0);
+      console.log('Loading credentials from contract:', PROGRAM_IDS.zkCredentialManager);
+      const creds = await zkCredential.loadCredentials();
+      setCredentials(creds);
+      setTotalCredentials(creds.length);
+      setVerifiedCredentials(creds.filter(c => c.isVerified).length);
     } catch (error) {
       console.error('Error loading credentials:', error);
     } finally {
@@ -77,39 +50,18 @@ export default function CredentialPage() {
 
     setLoading(true);
     try {
-      // TODO: Implement actual contract call
-      // Call store_zk_tls_proof_and_public_output from the ZK Credential Manager contract
-      console.log('Storing proof...');
+      console.log('Storing proof to contract:', PROGRAM_IDS.zkCredentialManager);
       
       // Create proof hash from the proof data
-      // const encoder = new TextEncoder();
-      // const data = encoder.encode(proofData + publicOutput);
-      // const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      // const proofHash = Array.from(new Uint8Array(hashBuffer));
+      const encoder = new TextEncoder();
+      const data = encoder.encode(proofData + publicOutput);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const proofHash = new Uint8Array(hashBuffer);
       
-      // Convert proof data and public output to bytes
-      const proofHash = new Array(32).fill(0); // Placeholder
+      // Store proof on-chain
+      const signature = await zkCredential.storeProof(proofData, publicOutput, proofHash);
       
-      // Required accounts:
-      // - credential: The credential PDA (to be created)
-      // - owner: Signer (wallet)
-      // - system_program: System program
-      
-      // Example implementation:
-      // const tx = await program.methods
-      //   .storeZkTlsProofAndPublicOutput(
-      //     Array.from(Buffer.from(JSON.stringify(JSON.parse(proofData)))),
-      //     Array.from(Buffer.from(JSON.stringify(JSON.parse(publicOutput)))),
-      //     proofHash
-      //   )
-      //   .accounts({
-      //     credential: credentialPDA,
-      //     owner: wallet.publicKey,
-      //     systemProgram: SystemProgram.programId,
-      //   })
-      //   .rpc();
-      
-      alert('Credential stored successfully! (Simulated)');
+      alert(`Credential stored successfully!\nTransaction: ${signature}`);
       setShowUploadModal(false);
       setProofData('');
       setPublicOutput('');
@@ -125,24 +77,16 @@ export default function CredentialPage() {
   const handleVerifyCredential = async (proofHash: string) => {
     setLoading(true);
     try {
-      // TODO: Implement actual contract call
-      // Call verify_credential from the ZK Credential Manager contract
-      console.log('Verifying credential:', proofHash);
+      console.log('Verifying credential on contract:', PROGRAM_IDS.zkCredentialManager);
       
-      // Required accounts:
-      // - credential: The credential PDA
-      // - authority: Authority signer (only authority can verify)
+      // Convert proof hash string to bytes
+      const encoder = new TextEncoder();
+      const proofHashBytes = encoder.encode(proofHash);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', proofHashBytes);
+      const hash = new Uint8Array(hashBuffer);
       
-      // Example implementation:
-      // const tx = await program.methods
-      //   .verifyCredential()
-      //   .accounts({
-      //     credential: credentialPDA,
-      //     authority: authorityPublicKey,
-      //   })
-      //   .rpc();
-      
-      alert('Credential verified successfully! (Simulated)');
+      const signature = await zkCredential.verifyCredential(hash);
+      alert(`Credential verified successfully!\nTransaction: ${signature}`);
       loadCredentials();
     } catch (error) {
       console.error('Verify credential error:', error);
@@ -159,24 +103,16 @@ export default function CredentialPage() {
 
     setLoading(true);
     try {
-      // TODO: Implement actual contract call
-      // Call revoke_credential from the ZK Credential Manager contract
-      console.log('Revoking credential:', proofHash);
+      console.log('Revoking credential on contract:', PROGRAM_IDS.zkCredentialManager);
       
-      // Required accounts:
-      // - credential: The credential PDA
-      // - owner: Owner signer (only owner can revoke their own credential)
+      // Convert proof hash string to bytes
+      const encoder = new TextEncoder();
+      const proofHashBytes = encoder.encode(proofHash);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', proofHashBytes);
+      const hash = new Uint8Array(hashBuffer);
       
-      // Example implementation:
-      // const tx = await program.methods
-      //   .revokeCredential()
-      //   .accounts({
-      //     credential: credentialPDA,
-      //     owner: wallet.publicKey,
-      //   })
-      //   .rpc();
-      
-      alert('Credential revoked successfully! (Simulated)');
+      const signature = await zkCredential.revokeCredential(hash);
+      alert(`Credential revoked successfully!\nTransaction: ${signature}`);
       loadCredentials();
     } catch (error) {
       console.error('Revoke credential error:', error);
