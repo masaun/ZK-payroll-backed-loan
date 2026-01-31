@@ -16,8 +16,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ContextProvider>
           <Navigation />
           <main className="container-fluid py-4" style={{ maxWidth: '1400px' }}>

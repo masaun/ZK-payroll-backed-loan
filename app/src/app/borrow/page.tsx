@@ -6,63 +6,63 @@ import { TransactionModal } from '@/components/TransactionModal';
 import { ConnectButton } from '@/components/ConnectButton';
 import { ZkProofProgress } from '@/components/ZkProofProgress';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { useBorrowing, type CollateralPool, type BorrowerState } from '@/hooks/useBorrowing';
+import { useBorrowing } from '@/hooks/useBorrowing';
 import { PROGRAM_IDS } from '@/config';
 import { 
   generateAndVerifyPayrollBackedLoanProof, 
   createSamplePayrollBackedLoanInputs,
-  type PayrollBackedLoanProofInputs 
 } from '@/lib/circuits/payroll-backed-loan/zk-proof-generation-and-verification';
 
 export default function BorrowPage() {
   const { address, isConnected } = useAppKitAccount();
   const borrowing = useBorrowing();
   const [loading, setLoading] = useState(false);
-  const [showDepositCollateralModal, setShowDepositCollateralModal] = useState(false);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
   const [showRepayModal, setShowRepayModal] = useState(false);
-  const [showWithdrawCollateralModal, setShowWithdrawCollateralModal] = useState(false);
   
-  const [collateralAmount, setCollateralAmount] = useState('');
   const [borrowAmount, setBorrowAmount] = useState('');
   const [repayAmount, setRepayAmount] = useState('');
-  const [withdrawCollateralAmount, setWithdrawCollateralAmount] = useState('');
   
-  const [userCollateral, setUserCollateral] = useState('0.00');
+  // Payroll-based loan states (non-collateral)
+  const [payrollAmount, setPayrollAmount] = useState('0.00'); // From zkTLS proof
   const [userBorrowed, setUserBorrowed] = useState('0.00');
-  const [healthFactor, setHealthFactor] = useState('∞');
   const [availableToBorrow, setAvailableToBorrow] = useState('0.00');
-  const [borrowerState, setBorrowerState] = useState<BorrowerState | null>(null);
+  // const [borrowerState, setBorrowerState] = useState<BorrowerState | null>(null);
   
   // ZK proof states
   const [zkProofStage, setZkProofStage] = useState('Initializing');
   const [zkProofProgress, setZkProofProgress] = useState(0);
   const [showZkProofProgress, setShowZkProofProgress] = useState(false);
 
-  const [pools, setPools] = useState<CollateralPool[]>([
-    {
-      address: PROGRAM_IDS.borrowing,
-      collateralMint: 'SOL',
-      totalCollateral: '2,100,000',
-      collateralRatio: '150',
-      liquidationThreshold: '120',
-      borrowAPY: '3.8'
+  // Step 1: Retrieve Payroll Proof via zkTLS (dummy for now)
+  const retrievePayrollProof = async () => {
+    try {
+      console.log('Retrieving payroll proof via zkTLS (Reclaim Protocol)...');
+      
+      // TODO: Replace with actual zkTLS/Reclaim Protocol integration
+      // const reclaimProof = await getReclaimPayrollProof();
+      // const payrollAmount = reclaimProof.publicOutput.payrollAmount;
+      
+      // DUMMY: For now, use a sample payroll amount
+      const dummyPayrollAmount = 5000; // $5000 per month
+      const repaymentRatio = 2; // Can borrow up to 2x monthly payroll
+      
+      setPayrollAmount(dummyPayrollAmount.toFixed(2));
+      setAvailableToBorrow((dummyPayrollAmount * repaymentRatio).toFixed(2));
+      
+      console.log('Dummy payroll amount retrieved:', dummyPayrollAmount);
+      console.log('Available to borrow (2x payroll):', dummyPayrollAmount * repaymentRatio);
+    } catch (error) {
+      console.error('Error retrieving payroll proof:', error);
     }
-  ]);
-
-  useEffect(() => {
-    if (isConnected && address) {
-      loadBorrowerState();
-    }
-  }, [isConnected, address]);
+  };
 
   const loadBorrowerState = async () => {
     try {
       console.log('Loading borrower state from contract:', PROGRAM_IDS.borrowing);
       const state = await borrowing.loadBorrowerState(PROGRAM_IDS.borrowing);
-      setBorrowerState(state);
+      // setBorrowerState(state);
       if (state) {
-        setUserCollateral((parseFloat(state.collateralAmount) / 1e9).toFixed(2));
         setUserBorrowed((parseFloat(state.borrowedAmount) / 1e9).toFixed(2));
       }
     } catch (error) {
@@ -70,31 +70,14 @@ export default function BorrowPage() {
     }
   };
 
-  const handleDepositCollateral = async () => {
-    if (!collateralAmount || parseFloat(collateralAmount) <= 0) {
-      alert('Please enter a valid amount');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      console.log('Depositing collateral to contract:', PROGRAM_IDS.borrowing);
-      const signature = await borrowing.depositCollateral(
-        PROGRAM_IDS.borrowing,
-        parseFloat(collateralAmount)
-      );
-      
-      alert(`Collateral deposited successfully!\nTransaction: ${signature}`);
-      setShowDepositCollateralModal(false);
-      setCollateralAmount('');
+  useEffect(() => {
+    if (isConnected && address) {
       loadBorrowerState();
-    } catch (error) {
-      console.error('Deposit collateral error:', error);
-      alert('Deposit failed: ' + (error as Error).message);
-    } finally {
-      setLoading(false);
+      // TODO: In production, fetch actual payroll from zkTLS proof
+      retrievePayrollProof();
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, address]);
 
   const handleBorrow = async () => {
     if (!borrowAmount || parseFloat(borrowAmount) <= 0) {
@@ -102,22 +85,43 @@ export default function BorrowPage() {
       return;
     }
 
+    // Validate borrow amount against available to borrow (based on payroll)
+    if (parseFloat(borrowAmount) > parseFloat(availableToBorrow)) {
+      alert(`Cannot borrow more than $${availableToBorrow} (2x your monthly payroll of $${payrollAmount})`);
+      return;
+    }
+
     setLoading(true);
     setShowZkProofProgress(true);
     
     try {
-      // Step 1: Generate and verify ZK proof
-      console.log('Generating ZK proof for payroll verification...');
+      // Step 1: Retrieve Payroll Proof via zkTLS (Reclaim Protocol)
+      console.log('Step 1: Retrieving payroll proof via zkTLS...');
+      setZkProofStage('Retrieving payroll proof via zkTLS');
+      setZkProofProgress(10);
       
-      // Create sample inputs (in production, this would come from zkTLS or other sources)
+      // TODO: Replace with actual zkTLS/Reclaim Protocol integration
+      // const reclaimProof = await getReclaimPayrollProof();
+      const dummyPayrollAmount = 5000; // Dummy value - will be replaced with actual zkTLS proof
+      console.log('Payroll amount from zkTLS proof:', dummyPayrollAmount);
+      
+      // Step 2: Generate ZK Payroll Backed Loan Proof
+      console.log('Step 2: Generating ZK Payroll Backed Loan Proof...');
+      setZkProofStage('Generating ZK proof');
+      setZkProofProgress(20);
+      
+      // Create proof inputs using the payroll amount from zkTLS
       const proofInputs = await createSamplePayrollBackedLoanInputs();
+      // TODO: Update proof inputs with actual payroll amount from zkTLS
+      // proofInputs.private_inputs.payroll_amount = dummyPayrollAmount.toString();
       
       // Generate and verify proof with progress tracking
       const proofResult = await generateAndVerifyPayrollBackedLoanProof(
         proofInputs,
         (stage, progress) => {
           setZkProofStage(stage);
-          setZkProofProgress(progress);
+          // Map progress from 20-80% range
+          setZkProofProgress(20 + (progress * 0.6));
         }
       );
       
@@ -127,27 +131,40 @@ export default function BorrowPage() {
         throw new Error(errorMsg);
       }
       
-      console.log('ZK proof generated and verified successfully');
+      // Step 3: ZK Proof Verified
+      console.log('Step 3: ZK Payroll Backed Loan Proof verified successfully ✓');
       console.log('Proof:', proofResult.proof);
       console.log('Public inputs:', proofResult.publicInputs);
+      setZkProofStage('Proof verified successfully');
+      setZkProofProgress(90);
       
       setShowZkProofProgress(false);
       
-      // Step 2: Execute borrow transaction with the proof
-      console.log('Borrowing from contracts:', PROGRAM_IDS.borrowing, PROGRAM_IDS.lending);
+      // Step 4: Transfer funds from lending pool to borrower
+      console.log('Step 4: Transferring funds from lending pool to borrower...');
+      setZkProofStage('Executing loan transfer');
+      setZkProofProgress(95);
+      
       const signature = await borrowing.borrow(
         PROGRAM_IDS.borrowing,
         PROGRAM_IDS.lending,
         parseFloat(borrowAmount)
       );
       
-      alert(`Borrow successful!\nZK Proof verified ✓\nTransaction: ${signature}`);
+      setZkProofProgress(100);
+      alert(
+        `Loan approved! ✓\n\n` +
+        `Payroll verified: $${dummyPayrollAmount}/month\n` +
+        `ZK Proof verified: ✓\n` +
+        `Loan amount: $${borrowAmount}\n` +
+        `Transaction: ${signature}`
+      );
       setShowBorrowModal(false);
       setBorrowAmount('');
       loadBorrowerState();
     } catch (error) {
       console.error('Borrow error:', error);
-      alert('Borrow failed: ' + (error as Error).message);
+      alert('Loan request failed: ' + (error as Error).message);
       setShowZkProofProgress(false);
     } finally {
       setLoading(false);
@@ -159,6 +176,11 @@ export default function BorrowPage() {
   const handleRepay = async () => {
     if (!repayAmount || parseFloat(repayAmount) <= 0) {
       alert('Please enter a valid amount');
+      return;
+    }
+
+    if (parseFloat(repayAmount) > parseFloat(userBorrowed)) {
+      alert(`Cannot repay more than your borrowed amount of $${userBorrowed}`);
       return;
     }
 
@@ -178,32 +200,6 @@ export default function BorrowPage() {
     } catch (error) {
       console.error('Repay error:', error);
       alert('Repayment failed: ' + (error as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleWithdrawCollateral = async () => {
-    if (!withdrawCollateralAmount || parseFloat(withdrawCollateralAmount) <= 0) {
-      alert('Please enter a valid amount');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      console.log('Withdrawing collateral from contract:', PROGRAM_IDS.borrowing);
-      const signature = await borrowing.withdrawCollateral(
-        PROGRAM_IDS.borrowing,
-        parseFloat(withdrawCollateralAmount)
-      );
-      
-      alert(`Collateral withdrawal successful!\nTransaction: ${signature}`);
-      setShowWithdrawCollateralModal(false);
-      setWithdrawCollateralAmount('');
-      loadBorrowerState();
-    } catch (error) {
-      console.error('Withdraw collateral error:', error);
-      alert('Withdrawal failed: ' + (error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -236,8 +232,8 @@ export default function BorrowPage() {
         <div className="col-12">
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h1 style={{ fontWeight: 700, fontSize: '2rem' }}>Borrow</h1>
-              <p className="text-muted mb-0">Deposit collateral and borrow assets</p>
+              <h1 style={{ fontWeight: 700, fontSize: '2rem' }}>Payroll-Backed Loans</h1>
+              <p className="text-muted mb-0">Non-collateral loans based on verified payroll income</p>
             </div>
             <ConnectButton />
           </div>
@@ -246,33 +242,27 @@ export default function BorrowPage() {
 
       {/* Your Borrowing Overview */}
       <div className="row g-3 mb-4">
-        <div className="col-md-3">
+        <div className="col-md-4">
           <StatsCard 
-            title="Your Collateral" 
-            value={`$${userCollateral}`}
+            title="Monthly Payroll" 
+            value={`$${payrollAmount}`}
             variant="info"
+            subValue="From zkTLS Proof"
           />
         </div>
-        <div className="col-md-3">
+        <div className="col-md-4">
           <StatsCard 
             title="Total Borrowed" 
             value={`$${userBorrowed}`}
             variant="warning"
           />
         </div>
-        <div className="col-md-3">
+        <div className="col-md-4">
           <StatsCard 
             title="Available to Borrow" 
             value={`$${availableToBorrow}`}
             variant="success"
-          />
-        </div>
-        <div className="col-md-3">
-          <StatsCard 
-            title="Health Factor" 
-            value={healthFactor}
-            variant="primary"
-            subValue={parseFloat(healthFactor) < 1.2 ? 'At risk' : 'Safe'}
+            subValue="2x Monthly Payroll"
           />
         </div>
       </div>
@@ -281,39 +271,42 @@ export default function BorrowPage() {
       <div className="row mb-4">
         <div className="col-12">
           <div className="card shadow-sm">
+            <div className="card-header bg-white border-0 py-3">
+              <h5 className="mb-0" style={{ fontWeight: 600 }}>
+                Loan Actions
+              </h5>
+            </div>
             <div className="card-body">
               <div className="row g-3">
-                <div className="col-md-6 col-lg-3">
+                <div className="col-md-6">
                   <button 
-                    className="btn btn-primary w-100"
-                    onClick={() => setShowDepositCollateralModal(true)}
-                  >
-                    Deposit Collateral
-                  </button>
-                </div>
-                <div className="col-md-6 col-lg-3">
-                  <button 
-                    className="btn btn-success w-100"
+                    className="btn btn-success w-100 btn-lg"
                     onClick={() => setShowBorrowModal(true)}
+                    disabled={!isConnected || parseFloat(availableToBorrow) <= 0}
                   >
-                    Borrow
+                    <i className="bi bi-cash-coin me-2"></i>
+                    Request Loan
                   </button>
+                  {parseFloat(availableToBorrow) <= 0 && (
+                    <small className="text-muted d-block mt-2">
+                      Connect wallet to view available loan amount
+                    </small>
+                  )}
                 </div>
-                <div className="col-md-6 col-lg-3">
+                <div className="col-md-6">
                   <button 
-                    className="btn btn-warning w-100"
+                    className="btn btn-warning w-100 btn-lg"
                     onClick={() => setShowRepayModal(true)}
+                    disabled={!isConnected || parseFloat(userBorrowed) <= 0}
                   >
-                    Repay
+                    <i className="bi bi-arrow-counterclockwise me-2"></i>
+                    Repay Loan
                   </button>
-                </div>
-                <div className="col-md-6 col-lg-3">
-                  <button 
-                    className="btn btn-outline-primary w-100"
-                    onClick={() => setShowWithdrawCollateralModal(true)}
-                  >
-                    Withdraw Collateral
-                  </button>
+                  {parseFloat(userBorrowed) <= 0 && isConnected && (
+                    <small className="text-muted d-block mt-2">
+                      No active loans to repay
+                    </small>
+                  )}
                 </div>
               </div>
             </div>
@@ -321,151 +314,126 @@ export default function BorrowPage() {
         </div>
       </div>
 
-      {/* Your Positions */}
+      {/* Your Loan Status */}
       <div className="row mb-4">
         <div className="col-12">
           <div className="card shadow-sm">
             <div className="card-header bg-white border-0 py-3">
               <h5 className="mb-0" style={{ fontWeight: 600 }}>
-                Your Borrowing Positions
+                Your Active Loans
               </h5>
             </div>
             <div className="card-body">
-              <div className="table-responsive">
-                <table className="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>Collateral</th>
-                      <th>Borrowed Asset</th>
-                      <th>Borrowed Amount</th>
-                      <th>Collateral Amount</th>
-                      <th>APY</th>
-                      <th>Health Factor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={6} className="text-center text-muted py-4">
-                        No borrowing positions yet. Deposit collateral below to start borrowing.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Available Collateral Pools */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <h3 className="mb-3" style={{ fontWeight: 600 }}>Available Collateral Pools</h3>
-        </div>
-      </div>
-
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <div className="table-responsive">
-                <table className="table table-hover align-middle">
-                  <thead>
-                    <tr>
-                      <th>Collateral Asset</th>
-                      <th>Total Collateral</th>
-                      <th>Collateral Ratio</th>
-                      <th>Liquidation Threshold</th>
-                      <th>Borrow APY</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pools.map((pool, index) => (
-                      <tr key={index}>
+              {parseFloat(userBorrowed) > 0 ? (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Loan Type</th>
+                        <th>Monthly Payroll</th>
+                        <th>Borrowed Amount</th>
+                        <th>APY</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
                         <td>
                           <div className="d-flex align-items-center">
-                            <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
-                                 style={{ width: '32px', height: '32px', fontSize: '0.875rem', fontWeight: 600 }}>
-                              {pool.collateralMint.substring(0, 2)}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 600 }}>{pool.collateralMint}</div>
-                            </div>
+                            <i className="bi bi-shield-check text-success me-2"></i>
+                            <span className="fw-semibold">Payroll-Backed Loan</span>
                           </div>
                         </td>
-                        <td>${pool.totalCollateral}</td>
-                        <td>{pool.collateralRatio}%</td>
-                        <td>{pool.liquidationThreshold}%</td>
+                        <td>${payrollAmount}</td>
+                        <td className="fw-semibold">${userBorrowed}</td>
+                        <td>3.8%</td>
                         <td>
-                          <span className="badge bg-warning text-dark" style={{ fontSize: '0.875rem', fontWeight: 500 }}>
-                            {pool.borrowAPY}%
-                          </span>
-                        </td>
-                        <td>
-                          <button 
-                            className="btn btn-sm btn-primary"
-                            onClick={() => setShowDepositCollateralModal(true)}
-                          >
-                            Use as Collateral
-                          </button>
+                          <span className="badge bg-success">Active</span>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center text-muted py-4">
+                  <i className="bi bi-inbox display-4 d-block mb-3"></i>
+                  <p>No active loans yet. Request a loan above to get started.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Deposit Collateral Modal */}
-      <TransactionModal
-        show={showDepositCollateralModal}
-        onHide={() => setShowDepositCollateralModal(false)}
-        title="Deposit Collateral"
-      >
-        <div className="mb-3">
-          <label className="form-label" style={{ fontWeight: 500 }}>Amount</label>
-          <div className="input-group input-group-lg">
-            <input
-              type="number"
-              className="form-control"
-              placeholder="0.00"
-              value={collateralAmount}
-              onChange={(e) => setCollateralAmount(e.target.value)}
-              disabled={loading}
-            />
-            <span className="input-group-text">SOL</span>
-          </div>
-          <div className="form-text">
-            Available: 10.00 SOL
+      {/* How It Works */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="card shadow-sm bg-light">
+            <div className="card-header bg-white border-0 py-3">
+              <h5 className="mb-0" style={{ fontWeight: 600 }}>
+                How Payroll-Backed Loans Work
+              </h5>
+            </div>
+            <div className="card-body">
+              <div className="row g-4">
+                <div className="col-md-3">
+                  <div className="text-center">
+                    <div className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>
+                      1
+                    </div>
+                    <h6 className="fw-semibold">Verify Payroll</h6>
+                    <p className="text-muted small">
+                      Connect your payroll data via zkTLS proof (Reclaim Protocol)
+                    </p>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-center">
+                    <div className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>
+                      2
+                    </div>
+                    <h6 className="fw-semibold">Generate ZK Proof</h6>
+                    <p className="text-muted small">
+                      Privacy-preserving proof of your payroll income
+                    </p>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-center">
+                    <div className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>
+                      3
+                    </div>
+                    <h6 className="fw-semibold">Get Approved</h6>
+                    <p className="text-muted small">
+                      Borrow up to 2x your monthly payroll without collateral
+                    </p>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-center">
+                    <div className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>
+                      4
+                    </div>
+                    <h6 className="fw-semibold">Receive Funds</h6>
+                    <p className="text-muted small">
+                      Instant transfer from lending pool to your wallet
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div className="mb-4">
-          <div className="alert alert-info" role="alert" style={{ fontSize: '0.875rem' }}>
-            <strong>Collateral Ratio:</strong> 150%<br />
-            You can borrow up to {collateralAmount ? (parseFloat(collateralAmount) / 1.5).toFixed(2) : '0.00'} USD worth of assets.
-          </div>
-        </div>
-
-        <button 
-          className="btn btn-primary w-100 btn-lg"
-          onClick={handleDepositCollateral}
-          disabled={loading || !collateralAmount}
-          style={{ fontWeight: 500 }}
-        >
-          {loading ? 'Processing...' : 'Deposit Collateral'}
-        </button>
-      </TransactionModal>
-
+      </div>
       {/* Borrow Modal */}
       <TransactionModal
         show={showBorrowModal}
         onHide={() => setShowBorrowModal(false)}
-        title="Borrow Assets"
+        title="Request Payroll-Backed Loan"
       >
         {/* ZK Proof Progress */}
         <ZkProofProgress 
@@ -475,7 +443,7 @@ export default function BorrowPage() {
         />
         
         <div className="mb-3">
-          <label className="form-label" style={{ fontWeight: 500 }}>Amount</label>
+          <label className="form-label" style={{ fontWeight: 500 }}>Loan Amount</label>
           <div className="input-group input-group-lg">
             <input
               type="number"
@@ -488,22 +456,31 @@ export default function BorrowPage() {
             <span className="input-group-text">USDC</span>
           </div>
           <div className="form-text">
-            Available to borrow: {availableToBorrow} USDC
+            Available to borrow: ${availableToBorrow} (based on ${payrollAmount} monthly payroll)
           </div>
         </div>
 
         <div className="mb-4">
+          <div className="alert alert-info" role="alert" style={{ fontSize: '0.875rem' }}>
+            <strong>How it works:</strong>
+            <ol className="mb-0 mt-2 ps-3">
+              <li>Retrieve your payroll proof via zkTLS</li>
+              <li>Generate ZK proof for privacy-preserving verification</li>
+              <li>Verify proof on-chain</li>
+              <li>Receive funds instantly (no collateral needed)</li>
+            </ol>
+          </div>
           <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Borrow APY</span>
+            <span className="text-muted">Monthly Payroll</span>
+            <span style={{ fontWeight: 600 }}>${payrollAmount}</span>
+          </div>
+          <div className="d-flex justify-content-between mb-2">
+            <span className="text-muted">Loan APY</span>
             <span style={{ fontWeight: 600 }}>3.8%</span>
           </div>
           <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Health Factor (after borrow)</span>
-            <span style={{ fontWeight: 600 }}>
-              {borrowAmount && parseFloat(userCollateral) > 0
-                ? ((parseFloat(userCollateral) * 1.2) / (parseFloat(userBorrowed) + parseFloat(borrowAmount))).toFixed(2)
-                : '∞'}
-            </span>
+            <span className="text-muted">Loan Type</span>
+            <span style={{ fontWeight: 600 }}>Non-Collateral</span>
           </div>
         </div>
 
@@ -513,7 +490,7 @@ export default function BorrowPage() {
           disabled={loading || !borrowAmount}
           style={{ fontWeight: 500 }}
         >
-          {loading ? 'Processing...' : 'Borrow'}
+          {loading ? 'Processing...' : 'Request Loan with ZK Proof'}
         </button>
       </TransactionModal>
 
@@ -524,7 +501,7 @@ export default function BorrowPage() {
         title="Repay Loan"
       >
         <div className="mb-3">
-          <label className="form-label" style={{ fontWeight: 500 }}>Amount</label>
+          <label className="form-label" style={{ fontWeight: 500 }}>Repayment Amount</label>
           <div className="input-group input-group-lg">
             <input
               type="number"
@@ -537,13 +514,13 @@ export default function BorrowPage() {
             <span className="input-group-text">USDC</span>
           </div>
           <div className="form-text">
-            Borrowed: {userBorrowed} USDC
+            Outstanding balance: ${userBorrowed} USDC
           </div>
         </div>
 
         <div className="mb-4">
           <div className="alert alert-success" role="alert" style={{ fontSize: '0.875rem' }}>
-            Repaying your loan will improve your health factor and free up collateral.
+            Repaying your loan on time helps maintain your credit profile for future loans.
           </div>
         </div>
 
@@ -553,47 +530,7 @@ export default function BorrowPage() {
           disabled={loading || !repayAmount}
           style={{ fontWeight: 500 }}
         >
-          {loading ? 'Processing...' : 'Repay'}
-        </button>
-      </TransactionModal>
-
-      {/* Withdraw Collateral Modal */}
-      <TransactionModal
-        show={showWithdrawCollateralModal}
-        onHide={() => setShowWithdrawCollateralModal(false)}
-        title="Withdraw Collateral"
-      >
-        <div className="mb-3">
-          <label className="form-label" style={{ fontWeight: 500 }}>Amount</label>
-          <div className="input-group input-group-lg">
-            <input
-              type="number"
-              className="form-control"
-              placeholder="0.00"
-              value={withdrawCollateralAmount}
-              onChange={(e) => setWithdrawCollateralAmount(e.target.value)}
-              disabled={loading}
-            />
-            <span className="input-group-text">SOL</span>
-          </div>
-          <div className="form-text">
-            Deposited: {userCollateral} SOL
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <div className="alert alert-warning" role="alert" style={{ fontSize: '0.875rem' }}>
-            <strong>Warning:</strong> Withdrawing collateral may decrease your health factor. Make sure you maintain sufficient collateral.
-          </div>
-        </div>
-
-        <button 
-          className="btn btn-primary w-100 btn-lg"
-          onClick={handleWithdrawCollateral}
-          disabled={loading || !withdrawCollateralAmount}
-          style={{ fontWeight: 500 }}
-        >
-          {loading ? 'Processing...' : 'Withdraw'}
+          {loading ? 'Processing...' : 'Repay Loan'}
         </button>
       </TransactionModal>
     </div>
