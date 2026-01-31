@@ -80,7 +80,6 @@ export function useBorrowing() {
 
     try {
       const connection = getConnection();
-      const programId = getBorrowingProgramId();
       const borrowerPubkey = new PublicKey(address);
       const collateralPoolPubkey = new PublicKey(collateralPoolAddress);
       
@@ -89,39 +88,48 @@ export function useBorrowing() {
       
       console.log('Depositing', amount, 'collateral to pool:', collateralPoolAddress);
       console.log('Borrower PDA:', borrowerPDA.toBase58());
+      console.log('Collateral Pool:', collateralPoolPubkey.toBase58());
       
-      // Build transaction
-      const transaction = new Transaction();
-      // TODO: Add actual deposit collateral instruction using @coral-xyz/anchor
+      // Contract integration not yet implemented
+      throw new Error(
+        'Deposit collateral functionality is not yet implemented. ' +
+        'The smart contracts need to be deployed and integrated. ' +
+        'Please ensure the borrowing program is deployed on Solana devnet/mainnet first.'
+      );
+      
+      // TODO: Uncomment when contract is fully deployed and tested
+      // const program = getProgram(PROGRAM_IDS.borrowing);
       // const instruction = await program.methods
       //   .depositIntoCollateralPool(new BN(amount * 1e9))
       //   .accounts({
       //     collateralPool: collateralPoolPubkey,
       //     borrowerState: borrowerPDA,
-      //     borrower: borrowerPubkey,
-      //     borrowerCollateralAccount: userCollateralAccount,
       //     poolVault: poolVault,
+      //     borrowerCollateralAccount: userCollateralAccount,
+      //     borrower: borrowerPubkey,
       //     tokenProgram: TOKEN_PROGRAM_ID,
       //     systemProgram: SystemProgram.programId,
       //   })
       //   .instruction();
+      //
+      // const transaction = new Transaction();
       // transaction.add(instruction);
-
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = borrowerPubkey;
-
-      const provider = walletProvider as unknown as SolanaProvider;
-      const signedTx = await provider.signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signedTx.serialize());
-      await connection.confirmTransaction({
-        signature,
-        blockhash,
-        lastValidBlockHeight
-      });
-
-      console.log('Collateral deposit successful with signature:', signature);
-      return signature;
+      //
+      // const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      // transaction.recentBlockhash = blockhash;
+      // transaction.feePayer = borrowerPubkey;
+      //
+      // const provider = walletProvider as unknown as SolanaProvider;
+      // const signedTx = await provider.signTransaction(transaction);
+      // const signature = await connection.sendRawTransaction(signedTx.serialize());
+      // await connection.confirmTransaction({
+      //   signature,
+      //   blockhash,
+      //   lastValidBlockHeight
+      // });
+      //
+      // console.log('Collateral deposit successful with signature:', signature);
+      // return signature;
     } catch (error) {
       console.error('Error depositing collateral:', error);
       throw error;
@@ -141,44 +149,70 @@ export function useBorrowing() {
       const connection = getConnection();
       const borrowerPubkey = new PublicKey(address);
       const collateralPoolPubkey = new PublicKey(collateralPoolAddress);
-      const lendingPoolPubkey = new PublicKey(lendingPoolAddress);
       
       // Derive borrower PDA
       const [borrowerPDA] = await deriveBorrowerPDA(borrowerPubkey, collateralPoolPubkey);
       
-      console.log('Borrowing', amount, 'from lending pool:', lendingPoolAddress);
+      // Check if borrower account exists (user must deposit collateral first)
+      try {
+        const borrowerAccount = await connection.getAccountInfo(borrowerPDA);
+        if (!borrowerAccount) {
+          throw new Error(
+            'You must deposit collateral before borrowing. ' +
+            'Please deposit collateral first to initialize your borrower account.'
+          );
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('deposit collateral')) {
+          throw err;
+        }
+        throw new Error(
+          'Failed to check borrower account. ' +
+          'Please ensure you have deposited collateral before borrowing.'
+        );
+      }
       
-      const transaction = new Transaction();
-      // TODO: Add actual borrow instruction
+      console.log('Borrowing', amount, 'from lending pool:', lendingPoolAddress);
+      console.log('Borrower PDA:', borrowerPDA.toString());
+      console.log('Collateral Pool:', collateralPoolPubkey.toString());
+      
+      // For now, return a mock transaction since the contract integration is TODO
+      // This prevents the \"empty transaction\" error
+      throw new Error(
+        'Borrow functionality is not yet implemented. ' +
+        'The ZK proof generation works, but contract integration is pending. ' +
+        'Please check the contract deployment status and ensure all programs are deployed.'
+      );
+      
+      // TODO: Uncomment when contract is fully deployed and tested
+      // const program = getProgram(PROGRAM_IDS.borrowing);
       // const instruction = await program.methods
       //   .borrowFromLendingPool(new BN(amount * 1e9))
       //   .accounts({
       //     collateralPool: collateralPoolPubkey,
       //     borrowerState: borrowerPDA,
       //     borrower: borrowerPubkey,
-      //     borrowerTokenAccount: userTokenAccount,
-      //     lendingPool: lendingPoolPubkey,
-      //     lendingPoolVault: lendingPoolVault,
-      //     lendingProgram: lendingProgramId,
       //   })
       //   .instruction();
+      //
+      // const transaction = new Transaction();
       // transaction.add(instruction);
-
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = borrowerPubkey;
-
-      const provider = walletProvider as unknown as SolanaProvider;
-      const signedTx = await provider.signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signedTx.serialize());
-      await connection.confirmTransaction({
-        signature,
-        blockhash,
-        lastValidBlockHeight
-      });
-
-      console.log('Borrow successful with signature:', signature);
-      return signature;
+      //
+      // const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      // transaction.recentBlockhash = blockhash;
+      // transaction.feePayer = borrowerPubkey;
+      //
+      // const provider = walletProvider as unknown as SolanaProvider;
+      // const signedTx = await provider.signTransaction(transaction);
+      // const signature = await connection.sendRawTransaction(signedTx.serialize());
+      // await connection.confirmTransaction({
+      //   signature,
+      //   blockhash,
+      //   lastValidBlockHeight
+      // });
+      //
+      // console.log('Borrow successful with signature:', signature);
+      // return signature;
     } catch (error) {
       console.error('Error borrowing:', error);
       throw error;
