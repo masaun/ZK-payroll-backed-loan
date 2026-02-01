@@ -8,11 +8,13 @@ skip-lint = false
 zk_verifiable_credential_manager = "5noDS5EGojcw8BuRA9vDAmSUBE8iCY2jnQBhzkyEiU1K"
 lending = "G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi"
 borrowing = "CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi"
+test_usdc = "41NBEbnBWvQTLs6TRKCDWH88rJTpdFUvq5WA3zpQGYfY"
 
 [programs.devnet]
 zk_verifiable_credential_manager = "5noDS5EGojcw8BuRA9vDAmSUBE8iCY2jnQBhzkyEiU1K"
 lending = "G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi"
 borrowing = "CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi"
+test_usdc = "41NBEbnBWvQTLs6TRKCDWH88rJTpdFUvq5WA3zpQGYfY"
 
 [registry]
 url = "https://api.apr.dev"
@@ -28,5 +30,6 @@ test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
 members = [
     "programs/zk-verifiable-credential-manager",
     "programs/lending",
-    "programs/borrowing"
+    "programs/borrowing",
+    "programs/test-usdc"
 ]

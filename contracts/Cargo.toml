@@ -2,7 +2,8 @@
 members = [
     "programs/zk-verifiable-credential-manager",
     "programs/lending",
-    "programs/borrowing"
+    "programs/borrowing",
+    "programs/test-usdc"
 ]
 resolver = "2"
 

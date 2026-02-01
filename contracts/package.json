@@ -36,11 +36,14 @@
   "license": "MIT",
   "devDependencies": {
     "@coral-xyz/anchor": "^0.29.0",
-    "@solana/web3.js": "^1.87.0",
     "@solana/spl-token": "^0.3.9",
+    "@solana/web3.js": "^1.87.0",
     "chai": "^4.3.10",
     "mocha": "^10.2.0",
     "ts-mocha": "^10.0.0",
     "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
   }
 }
