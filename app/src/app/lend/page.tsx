@@ -158,6 +158,53 @@ export default function LendPage() {
         </div>
       </div>
 
+      {/* Quick Actions */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="card shadow-sm">
+            <div className="card-header bg-white border-0 py-3">
+              <h5 className="mb-0" style={{ fontWeight: 600 }}>
+                Lending Actions
+              </h5>
+            </div>
+            <div className="card-body">
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <button 
+                    className="btn btn-primary w-100 btn-lg"
+                    onClick={() => setShowDepositModal(true)}
+                    disabled={!isConnected}
+                  >
+                    <i className="bi bi-wallet2 me-2"></i>
+                    Lend Now
+                  </button>
+                  {!isConnected && (
+                    <small className="text-muted d-block mt-2">
+                      Connect wallet to start lending
+                    </small>
+                  )}
+                </div>
+                <div className="col-md-6">
+                  <button 
+                    className="btn btn-outline-primary w-100 btn-lg"
+                    onClick={() => setShowWithdrawModal(true)}
+                    disabled={!isConnected || parseFloat(userDeposit) <= 0}
+                  >
+                    <i className="bi bi-arrow-down-circle me-2"></i>
+                    Withdraw
+                  </button>
+                  {parseFloat(userDeposit) <= 0 && isConnected && (
+                    <small className="text-muted d-block mt-2">
+                      No deposits to withdraw
+                    </small>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Your Positions */}
       <div className="row mb-4">
         <div className="col-12">
