@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-declare_id!("CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi");
+declare_id!("HBY7P5xzgxhmaSXFiGE3HeWrmhNScYh3r6amyp4q7e4x");
 
 #[program]
 pub mod borrowing {
@@ -28,45 +28,6 @@ pub mod borrowing {
             authority: pool.authority,
             collateral_ratio,
             liquidation_threshold,
-        });
-
-        Ok(())
-    }
-
-    /// Deposit collateral into the collateral pool
-    pub fn deposit_into_collateral_pool(
-        ctx: Context<DepositIntoCollateralPool>,
-        amount: u64,
-    ) -> Result<()> {
-        let pool = &mut ctx.accounts.collateral_pool;
-        let borrower_state = &mut ctx.accounts.borrower_state;
-
-        require!(amount > 0, ErrorCode::InvalidAmount);
-
-        // Transfer collateral tokens from borrower to pool vault
-        let cpi_accounts = Transfer {
-            from: ctx.accounts.borrower_collateral_account.to_account_info(),
-            to: ctx.accounts.pool_vault.to_account_info(),
-            authority: ctx.accounts.borrower.to_account_info(),
-        };
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        token::transfer(cpi_ctx, amount)?;
-
-        // Update borrower state
-        borrower_state.borrower = ctx.accounts.borrower.key();
-        borrower_state.collateral_pool = pool.key();
-        borrower_state.collateral_amount += amount;
-        borrower_state.collateral_timestamp = Clock::get()?.unix_timestamp;
-
-        // Update pool totals
-        pool.total_collateral += amount;
-
-        emit!(CollateralDeposited {
-            pool: pool.key(),
-            borrower: borrower_state.borrower,
-            amount,
-            total_collateral: borrower_state.collateral_amount,
         });
 
         Ok(())
@@ -305,40 +266,6 @@ pub struct InitializeCollateralPool<'info> {
 }
 
 #[derive(Accounts)]
-pub struct DepositIntoCollateralPool<'info> {
-    #[account(mut)]
-    pub collateral_pool: Account<'info, CollateralPool>,
-    
-    #[account(
-        init_if_needed,
-        payer = borrower,
-        space = BorrowerState::LEN,
-        seeds = [b"borrower", borrower.key().as_ref(), collateral_pool.key().as_ref()],
-        bump
-    )]
-    pub borrower_state: Account<'info, BorrowerState>,
-    
-    #[account(
-        mut,
-        constraint = pool_vault.key() == collateral_pool.pool_vault
-    )]
-    pub pool_vault: Account<'info, TokenAccount>,
-    
-    #[account(
-        mut,
-        constraint = borrower_collateral_account.owner == borrower.key(),
-        constraint = borrower_collateral_account.mint == collateral_pool.collateral_mint
-    )]
-    pub borrower_collateral_account: Account<'info, TokenAccount>,
-    
-    #[account(mut)]
-    pub borrower: Signer<'info>,
-    
-    pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
 pub struct WithdrawFromCollateralPool<'info> {
     #[account(mut)]
     pub collateral_pool: Account<'info, CollateralPool>,
@@ -480,14 +407,6 @@ pub struct CollateralPoolInitialized {
     pub authority: Pubkey,
     pub collateral_ratio: u64,
     pub liquidation_threshold: u64,
-}
-
-#[event]
-pub struct CollateralDeposited {
-    pub pool: Pubkey,
-    pub borrower: Pubkey,
-    pub amount: u64,
-    pub total_collateral: u64,
 }
 
 #[event]
