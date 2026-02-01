@@ -6,7 +6,7 @@ import { TransactionModal } from '@/components/TransactionModal';
 import { ConnectButton } from '@/components/ConnectButton';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useLending, type LendingPool, type DepositorAccount } from '@/hooks/useLending';
-import { PROGRAM_IDS } from '@/config';
+import { PROGRAM_IDS, TOKEN_MINTS } from '@/config';
 
 export default function LendPage() {
   const { address, isConnected } = useAppKitAccount();
@@ -23,7 +23,7 @@ export default function LendPage() {
   const [pools, setPools] = useState<LendingPool[]>([
     {
       address: PROGRAM_IDS.lending,
-      tokenMint: 'USDC',
+      tokenMint: 'Test USDC',
       totalDeposits: '1,250,000',
       totalBorrowed: '400,000',
       interestRate: '520',
@@ -60,10 +60,14 @@ export default function LendPage() {
 
     setLoading(true);
     try {
-      console.log('Depositing to contract:', PROGRAM_IDS.lending);
-      const signature = await lending.deposit(PROGRAM_IDS.lending, parseFloat(depositAmount));
+      console.log('Depositing Test USDC to contract:', PROGRAM_IDS.lending);
+      const signature = await lending.deposit(
+        PROGRAM_IDS.lending, 
+        parseFloat(depositAmount),
+        TOKEN_MINTS.testUsdc
+      );
       
-      alert(`Deposit successful!\nTransaction: ${signature}`);
+      alert(`Deposit successful!\n${depositAmount} Test USDC deposited\nTransaction: ${signature}`);
       setShowDepositModal(false);
       setDepositAmount('');
       loadUserDeposits();
@@ -83,10 +87,14 @@ export default function LendPage() {
 
     setLoading(true);
     try {
-      console.log('Withdrawing from contract:', PROGRAM_IDS.lending);
-      const signature = await lending.withdraw(PROGRAM_IDS.lending, parseFloat(withdrawAmount));
+      console.log('Withdrawing Test USDC from contract:', PROGRAM_IDS.lending);
+      const signature = await lending.withdraw(
+        PROGRAM_IDS.lending, 
+        parseFloat(withdrawAmount),
+        TOKEN_MINTS.testUsdc
+      );
       
-      alert(`Withdrawal successful!\nTransaction: ${signature}`);
+      alert(`Withdrawal successful!\n${withdrawAmount} Test USDC withdrawn\nTransaction: ${signature}`);
       setShowWithdrawModal(false);
       setWithdrawAmount('');
       loadUserDeposits();
@@ -338,10 +346,10 @@ export default function LendPage() {
               onChange={(e) => setDepositAmount(e.target.value)}
               disabled={loading}
             />
-            <span className="input-group-text">USDC</span>
+            <span className="input-group-text">Test USDC</span>
           </div>
           <div className="form-text">
-            Available: 1,000.00 USDC
+            Available: 1,000.00 Test USDC
           </div>
         </div>
 
@@ -353,7 +361,7 @@ export default function LendPage() {
           <div className="d-flex justify-content-between">
             <span className="text-muted">Estimated earnings (yearly)</span>
             <span style={{ fontWeight: 600 }}>
-              {depositAmount ? (parseFloat(depositAmount) * 0.052).toFixed(2) : '0.00'} USDC
+              {depositAmount ? (parseFloat(depositAmount) * 0.052).toFixed(2) : '0.00'} Test USDC
             </span>
           </div>
         </div>
@@ -385,10 +393,10 @@ export default function LendPage() {
               onChange={(e) => setWithdrawAmount(e.target.value)}
               disabled={loading}
             />
-            <span className="input-group-text">USDC</span>
+            <span className="input-group-text">Test USDC</span>
           </div>
           <div className="form-text">
-            Deposited: {userDeposit} USDC
+            Deposited: {userDeposit} Test USDC
           </div>
         </div>
 

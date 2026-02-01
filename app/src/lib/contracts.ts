@@ -1,5 +1,5 @@
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
-import { PROGRAM_IDS } from '@/config';
+import { PROGRAM_IDS, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@/config';
 
 // Contract helper functions for interacting with deployed Solana programs
 
@@ -22,6 +22,41 @@ export function getLendingProgramId(): PublicKey {
  */
 export function getBorrowingProgramId(): PublicKey {
   return new PublicKey(PROGRAM_IDS.borrowing);
+}
+
+/**
+ * Get SPL Token Program ID
+ */
+export function getTokenProgramId(): PublicKey {
+  return new PublicKey(TOKEN_PROGRAM_ID);
+}
+
+/**
+ * Get Associated Token Program ID
+ */
+export function getAssociatedTokenProgramId(): PublicKey {
+  return new PublicKey(ASSOCIATED_TOKEN_PROGRAM_ID);
+}
+
+/**
+ * Derive associated token account address
+ * @param owner - The owner's public key
+ * @param mint - The token mint public key
+ * @returns The associated token account address
+ */
+export async function deriveAssociatedTokenAddress(
+  owner: PublicKey,
+  mint: PublicKey
+): Promise<PublicKey> {
+  const [address] = PublicKey.findProgramAddressSync(
+    [
+      owner.toBuffer(),
+      getTokenProgramId().toBuffer(),
+      mint.toBuffer(),
+    ],
+    getAssociatedTokenProgramId()
+  );
+  return address;
 }
 
 /**

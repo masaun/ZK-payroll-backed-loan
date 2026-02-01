@@ -7,7 +7,7 @@ import { ConnectButton } from '@/components/ConnectButton';
 import { ZkProofProgress } from '@/components/ZkProofProgress';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useBorrowing } from '@/hooks/useBorrowing';
-import { PROGRAM_IDS } from '@/config';
+import { PROGRAM_IDS, TOKEN_MINTS } from '@/config';
 import { 
   generateAndVerifyPayrollBackedLoanProof, 
   createSamplePayrollBackedLoanInputs,
@@ -141,14 +141,15 @@ export default function BorrowPage() {
       setShowZkProofProgress(false);
       
       // Step 4: Transfer funds from lending pool to borrower
-      console.log('Step 4: Transferring funds from lending pool to borrower...');
+      console.log('Step 4: Transferring Test USDC from lending pool to borrower...');
       setZkProofStage('Executing loan transfer');
       setZkProofProgress(95);
       
       const signature = await borrowing.borrow(
         PROGRAM_IDS.borrowing,
         PROGRAM_IDS.lending,
-        parseFloat(borrowAmount)
+        parseFloat(borrowAmount),
+        TOKEN_MINTS.testUsdc
       );
       
       setZkProofProgress(100);
@@ -156,7 +157,7 @@ export default function BorrowPage() {
         `Loan approved! ✓\n\n` +
         `Payroll verified: $${dummyPayrollAmount}/month\n` +
         `ZK Proof verified: ✓\n` +
-        `Loan amount: $${borrowAmount}\n` +
+        `Loan amount: $${borrowAmount} Test USDC\n` +
         `Transaction: ${signature}`
       );
       setShowBorrowModal(false);

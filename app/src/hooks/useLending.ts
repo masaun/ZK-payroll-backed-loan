@@ -1,7 +1,21 @@
 import { useCallback } from 'react';
-import { PublicKey, SystemProgram, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { 
+  PublicKey, 
+  SystemProgram, 
+  Transaction, 
+  VersionedTransaction,
+  TransactionInstruction,
+  SYSVAR_RENT_PUBKEY
+} from '@solana/web3.js';
 import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
-import { getLendingProgramId, deriveDepositorPDA, getConnection } from '@/lib/contracts';
+import { 
+  getLendingProgramId, 
+  deriveDepositorPDA, 
+  getConnection,
+  getTokenProgramId,
+  deriveAssociatedTokenAddress 
+} from '@/lib/contracts';
+import { TOKEN_MINTS } from '@/config';
 
 export interface LendingPool {
   address: string;
@@ -70,7 +84,8 @@ export function useLending() {
 
   const deposit = useCallback(async (
     lendingPoolAddress: string,
-    amount: number
+    amount: number,
+    tokenMint?: string
   ): Promise<string> => {
     if (!isConnected || !address || !walletProvider) {
       throw new Error('Wallet not connected');
@@ -81,30 +96,50 @@ export function useLending() {
       const programId = getLendingProgramId();
       const depositorPubkey = new PublicKey(address);
       const lendingPoolPubkey = new PublicKey(lendingPoolAddress);
+      const mintPubkey = new PublicKey(tokenMint || TOKEN_MINTS.testUsdc);
       
-      // Derive depositor PDA
+      // Derive PDAs
       const [depositorPDA] = await deriveDepositorPDA(depositorPubkey, lendingPoolPubkey);
+      const [poolVault] = PublicKey.findProgramAddressSync(
+        [Buffer.from('vault'), lendingPoolPubkey.toBuffer(), mintPubkey.toBuffer()],
+        programId
+      );
       
-      console.log('Depositing', amount, 'to lending pool:', lendingPoolAddress);
+      // Get depositor's token account
+      const depositorTokenAccount = await deriveAssociatedTokenAddress(
+        depositorPubkey,
+        mintPubkey
+      );
+      
+      console.log('Depositing', amount, 'Test USDC to lending pool:', lendingPoolAddress);
       console.log('Depositor PDA:', depositorPDA.toBase58());
+      console.log('Pool Vault:', poolVault.toBase58());
+      console.log('Depositor Token Account:', depositorTokenAccount.toBase58());
       
-      // Build transaction
-      const transaction = new Transaction();
-      // TODO: Add actual deposit instruction using @coral-xyz/anchor
-      // const instruction = await program.methods
-      //   .depositIntoLendingPool(new BN(amount * 1e9))
-      //   .accounts({
-      //     lendingPool: lendingPoolPubkey,
-      //     depositorAccount: depositorPDA,
-      //     depositor: depositorPubkey,
-      //     depositorTokenAccount: userTokenAccount,
-      //     poolVault: poolVault,
-      //     tokenProgram: TOKEN_PROGRAM_ID,
-      //     systemProgram: SystemProgram.programId,
-      //   })
-      //   .instruction();
-      // transaction.add(instruction);
+      // Build deposit instruction
+      const amountLamports = Math.floor(amount * 1e6); // 6 decimals for USDC
+      
+      // Create the instruction data (discriminator + amount)
+      const discriminator = Buffer.from([3, 250, 204, 232, 7, 192, 142, 181]); // deposit_into_lending_pool
+      const amountBuffer = Buffer.alloc(8);
+      amountBuffer.writeBigUInt64LE(BigInt(amountLamports));
+      const data = Buffer.concat([discriminator, amountBuffer]);
+      
+      const depositInstruction = new TransactionInstruction({
+        keys: [
+          { pubkey: lendingPoolPubkey, isSigner: false, isWritable: true },
+          { pubkey: depositorPDA, isSigner: false, isWritable: true },
+          { pubkey: poolVault, isSigner: false, isWritable: true },
+          { pubkey: depositorTokenAccount, isSigner: false, isWritable: true },
+          { pubkey: depositorPubkey, isSigner: true, isWritable: true },
+          { pubkey: getTokenProgramId(), isSigner: false, isWritable: false },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId,
+        data,
+      });
 
+      const transaction = new Transaction().add(depositInstruction);
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = depositorPubkey;
@@ -128,7 +163,8 @@ export function useLending() {
 
   const withdraw = useCallback(async (
     lendingPoolAddress: string,
-    amount: number
+    amount: number,
+    tokenMint?: string
   ): Promise<string> => {
     if (!isConnected || !address || !walletProvider) {
       throw new Error('Wallet not connected');
@@ -136,17 +172,51 @@ export function useLending() {
 
     try {
       const connection = getConnection();
+      const programId = getLendingProgramId();
       const depositorPubkey = new PublicKey(address);
       const lendingPoolPubkey = new PublicKey(lendingPoolAddress);
+      const mintPubkey = new PublicKey(tokenMint || TOKEN_MINTS.testUsdc);
       
-      // Derive depositor PDA
+      // Derive PDAs
       const [depositorPDA] = await deriveDepositorPDA(depositorPubkey, lendingPoolPubkey);
+      const [poolVault] = PublicKey.findProgramAddressSync(
+        [Buffer.from('vault'), lendingPoolPubkey.toBuffer(), mintPubkey.toBuffer()],
+        programId
+      );
       
-      console.log('Withdrawing', amount, 'from lending pool:', lendingPoolAddress);
+      // Get depositor's token account
+      const depositorTokenAccount = await deriveAssociatedTokenAddress(
+        depositorPubkey,
+        mintPubkey
+      );
       
-      const transaction = new Transaction();
-      // TODO: Add actual withdraw instruction
+      console.log('Withdrawing', amount, 'Test USDC from lending pool:', lendingPoolAddress);
+      console.log('Depositor PDA:', depositorPDA.toBase58());
+      console.log('Pool Vault:', poolVault.toBase58());
       
+      // Build withdraw instruction
+      const amountLamports = Math.floor(amount * 1e6); // 6 decimals for USDC
+      
+      // Create the instruction data (discriminator + amount)
+      const discriminator = Buffer.from([183, 18, 70, 156, 148, 109, 161, 34]); // withdraw_from_lending_pool
+      const amountBuffer = Buffer.alloc(8);
+      amountBuffer.writeBigUInt64LE(BigInt(amountLamports));
+      const data = Buffer.concat([discriminator, amountBuffer]);
+      
+      const withdrawInstruction = new TransactionInstruction({
+        keys: [
+          { pubkey: lendingPoolPubkey, isSigner: false, isWritable: true },
+          { pubkey: depositorPDA, isSigner: false, isWritable: true },
+          { pubkey: poolVault, isSigner: false, isWritable: true },
+          { pubkey: depositorTokenAccount, isSigner: false, isWritable: true },
+          { pubkey: depositorPubkey, isSigner: true, isWritable: false },
+          { pubkey: getTokenProgramId(), isSigner: false, isWritable: false },
+        ],
+        programId,
+        data,
+      });
+
+      const transaction = new Transaction().add(withdrawInstruction);
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = depositorPubkey;
