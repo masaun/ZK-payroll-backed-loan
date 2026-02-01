@@ -28,6 +28,12 @@ export const TOKEN_MINTS = {
   testUsdc: process.env.NEXT_PUBLIC_TEST_USDC_MINT || "BNpFU4gF1HLBghg262GxthuMUhy8bbe966atA8yyTuVc"
 } as const
 
+// Pool Addresses (Devnet)
+export const POOL_ADDRESSES = {
+  lendingPool: process.env.NEXT_PUBLIC_LENDING_POOL_ADDRESS || "BxGTDU39uymhYs987xZmEqe4G1Pgwt4F6fZQ3FfLPz5J",
+  lendingPoolVault: process.env.NEXT_PUBLIC_LENDING_POOL_VAULT || "2FJnoKoepSNBntzp6UQzSjL24gwzAcoZzzzbc8AevGbo"
+} as const
+
 // SPL Token Program ID
 export const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 export const ASSOCIATED_TOKEN_PROGRAM_ID = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"

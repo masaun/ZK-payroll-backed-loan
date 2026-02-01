@@ -69,18 +69,121 @@ export function useLending() {
         return null;
       }
 
-      // Parse account data (simplified - actual parsing depends on account structure)
-      // TODO: Use anchor to properly deserialize the account
+      // Parse account data
+      // DepositorAccount structure:
+      // - depositor: Pubkey (32 bytes)
+      // - lending_pool: Pubkey (32 bytes)
+      // - deposited_amount: u64 (8 bytes)
+      // - deposit_timestamp: i64 (8 bytes)
+      const data = accountInfo.data;
+      
+      if (data.length < 8 + 32 + 32 + 8 + 8) {
+        console.error('Invalid account data length');
+        return null;
+      }
+      
+      // Skip 8-byte discriminator
+      let offset = 8;
+      
+      // Read deposited_amount (u64 at offset 64)
+      offset = 8 + 32 + 32; // discriminator + depositor + lending_pool
+      const depositedAmount = data.readBigUInt64LE(offset);
+      
+      // Read deposit_timestamp (i64)
+      offset += 8;
+      const depositTimestamp = Number(data.readBigInt64LE(offset));
+      
+      console.log('Deposited amount (raw):', depositedAmount.toString());
+      console.log('Deposit timestamp:', depositTimestamp);
+
       return {
         depositor: address,
-        depositedAmount: '0',
-        depositTimestamp: Date.now() / 1000,
+        depositedAmount: depositedAmount.toString(),
+        depositTimestamp: depositTimestamp,
       };
     } catch (error) {
       console.error('Error loading deposits:', error);
       return null;
     }
   }, [isConnected, address]);
+
+  const loadPoolData = useCallback(async (
+    lendingPoolAddress: string
+  ): Promise<LendingPool | null> => {
+    try {
+      const connection = getConnection();
+      const lendingPoolPubkey = new PublicKey(lendingPoolAddress);
+      
+      console.log('Loading pool data from:', lendingPoolAddress);
+      
+      // Fetch pool account data
+      const accountInfo = await connection.getAccountInfo(lendingPoolPubkey);
+      
+      if (!accountInfo) {
+        console.log('Pool account not found');
+        return null;
+      }
+
+      // Parse LendingPool account data
+      // LendingPool structure:
+      // - authority: Pubkey (32 bytes)
+      // - token_mint: Pubkey (32 bytes)
+      // - pool_vault: Pubkey (32 bytes)
+      // - total_deposits: u64 (8 bytes)
+      // - total_borrowed: u64 (8 bytes)
+      // - interest_rate: u64 (8 bytes)
+      // - min_deposit: u64 (8 bytes)
+      // - bump: u8 (1 byte)
+      const data = accountInfo.data;
+      
+      if (data.length < 8 + 32 + 32 + 32 + 8 + 8 + 8 + 8 + 1) {
+        console.error('Invalid pool account data length');
+        return null;
+      }
+      
+      let offset = 8 + 32 + 32 + 32; // discriminator + authority + token_mint + pool_vault
+      
+      const totalDeposits = data.readBigUInt64LE(offset);
+      offset += 8;
+      
+      const totalBorrowed = data.readBigUInt64LE(offset);
+      offset += 8;
+      
+      const interestRate = data.readBigUInt64LE(offset);
+      offset += 8;
+      
+      const minDeposit = data.readBigUInt64LE(offset);
+      
+      // Calculate utilization
+      const utilization = totalDeposits > 0n 
+        ? Number((totalBorrowed * 10000n) / totalDeposits) / 100
+        : 0;
+      
+      // APY is the interest rate (already in basis points)
+      const apy = Number(interestRate) / 100;
+      
+      console.log('Pool data loaded:', {
+        totalDeposits: totalDeposits.toString(),
+        totalBorrowed: totalBorrowed.toString(),
+        interestRate: interestRate.toString(),
+        minDeposit: minDeposit.toString(),
+      });
+
+      return {
+        address: lendingPoolAddress,
+        tokenMint: 'Test USDC',
+        totalDeposits: (Number(totalDeposits) / 1e6).toFixed(2),
+        totalBorrowed: (Number(totalBorrowed) / 1e6).toFixed(2),
+        interestRate: interestRate.toString(),
+        utilization: utilization.toFixed(2),
+        apy: apy.toFixed(2),
+        minDeposit: (Number(minDeposit) / 1e6).toFixed(2),
+      };
+    } catch (error) {
+      console.error('Error loading pool data:', error);
+      return null;
+    }
+  }, []);
 
   const deposit = useCallback(async (
     lendingPoolAddress: string,
@@ -100,9 +203,11 @@ export function useLending() {
       
       // Derive PDAs
       const [depositorPDA] = await deriveDepositorPDA(depositorPubkey, lendingPoolPubkey);
-      const [poolVault] = PublicKey.findProgramAddressSync(
-        [Buffer.from('vault'), lendingPoolPubkey.toBuffer(), mintPubkey.toBuffer()],
-        programId
+      
+      // Pool vault is the associated token account for the lending pool PDA
+      const poolVault = await deriveAssociatedTokenAddress(
+        lendingPoolPubkey,
+        mintPubkey
       );
       
       // Get depositor's token account
@@ -179,9 +284,11 @@ export function useLending() {
       
       // Derive PDAs
       const [depositorPDA] = await deriveDepositorPDA(depositorPubkey, lendingPoolPubkey);
-      const [poolVault] = PublicKey.findProgramAddressSync(
-        [Buffer.from('vault'), lendingPoolPubkey.toBuffer(), mintPubkey.toBuffer()],
-        programId
+      
+      // Pool vault is the associated token account for the lending pool PDA
+      const poolVault = await deriveAssociatedTokenAddress(
+        lendingPoolPubkey,
+        mintPubkey
       );
       
       // Get depositor's token account
@@ -240,6 +347,7 @@ export function useLending() {
 
   return {
     loadUserDeposits,
+    loadPoolData,
     deposit,
     withdraw,
   };
