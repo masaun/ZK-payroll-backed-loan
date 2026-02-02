@@ -1,7 +1,27 @@
 import { useCallback } from 'react';
-import { PublicKey, SystemProgram, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { 
+  PublicKey, 
+  SystemProgram, 
+  Transaction, 
+  VersionedTransaction,
+  TransactionInstruction 
+} from '@solana/web3.js';
+import { 
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddressSync,
+  ASSOCIATED_TOKEN_PROGRAM_ID
+} from '@solana/spl-token';
 import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
-import { getBorrowingProgramId, deriveBorrowerPDA, getConnection } from '@/lib/contracts';
+import { 
+  getBorrowingProgramId,
+  getLendingProgramId, 
+  deriveBorrowerPDA,
+  deriveCollateralPoolPDA,
+  getConnection,
+  getTokenProgramId,
+  deriveAssociatedTokenAddress 
+} from '@/lib/contracts';
+import { TOKEN_MINTS } from '@/config';
 
 export interface CollateralPool {
   address: string;
@@ -30,7 +50,7 @@ export function useBorrowing() {
   const { walletProvider } = useAppKitProvider('solana');
 
   const loadBorrowerState = useCallback(async (
-    collateralPoolAddress: string
+    lendingPoolAddress: string
   ): Promise<BorrowerState | null> => {
     if (!isConnected || !address) {
       console.log('Wallet not connected');
@@ -40,10 +60,10 @@ export function useBorrowing() {
     try {
       const connection = getConnection();
       const borrowerPubkey = new PublicKey(address);
-      const collateralPoolPubkey = new PublicKey(collateralPoolAddress);
+      const lendingPoolPubkey = new PublicKey(lendingPoolAddress);
       
-      // Derive borrower PDA
-      const [borrowerPDA] = await deriveBorrowerPDA(borrowerPubkey, collateralPoolPubkey);
+      // Derive borrower PDA using lending pool
+      const [borrowerPDA] = await deriveBorrowerPDA(borrowerPubkey, lendingPoolPubkey);
       
       console.log('Loading borrower state from PDA:', borrowerPDA.toBase58());
       
@@ -137,9 +157,9 @@ export function useBorrowing() {
   }, [isConnected, address, walletProvider]);
 
   const borrow = useCallback(async (
-    collateralPoolAddress: string,
     lendingPoolAddress: string,
-    amount: number
+    amount: number,
+    tokenMint?: string
   ): Promise<string> => {
     if (!isConnected || !address || !walletProvider) {
       throw new Error('Wallet not connected');
@@ -147,72 +167,117 @@ export function useBorrowing() {
 
     try {
       const connection = getConnection();
+      const borrowingProgramId = getBorrowingProgramId();
+      const lendingProgramId = getLendingProgramId();
       const borrowerPubkey = new PublicKey(address);
-      const collateralPoolPubkey = new PublicKey(collateralPoolAddress);
+      const lendingPoolPubkey = new PublicKey(lendingPoolAddress);
+      const mintPubkey = new PublicKey(tokenMint || TOKEN_MINTS.testUsdc);
       
-      // Derive borrower PDA
-      const [borrowerPDA] = await deriveBorrowerPDA(borrowerPubkey, collateralPoolPubkey);
+      // Derive borrower PDA - now uses lending pool instead of collateral pool
+      const [borrowerPDA] = await deriveBorrowerPDA(borrowerPubkey, lendingPoolPubkey);
       
-      // Check if borrower account exists (user must deposit collateral first)
-      try {
-        const borrowerAccount = await connection.getAccountInfo(borrowerPDA);
-        if (!borrowerAccount) {
-          throw new Error(
-            'You must deposit collateral before borrowing. ' +
-            'Please deposit collateral first to initialize your borrower account.'
-          );
-        }
-      } catch (err) {
-        if (err instanceof Error && err.message.includes('deposit collateral')) {
-          throw err;
-        }
-        throw new Error(
-          'Failed to check borrower account. ' +
-          'Please ensure you have deposited collateral before borrowing.'
-        );
-      }
-      
-      console.log('Borrowing', amount, 'from lending pool:', lendingPoolAddress);
-      console.log('Borrower PDA:', borrowerPDA.toString());
-      console.log('Collateral Pool:', collateralPoolPubkey.toString());
-      
-      // For now, return a mock transaction since the contract integration is TODO
-      // This prevents the \"empty transaction\" error
-      throw new Error(
-        'Borrow functionality is not yet implemented. ' +
-        'The ZK proof generation works, but contract integration is pending. ' +
-        'Please check the contract deployment status and ensure all programs are deployed.'
+      // Pool vault is the associated token account for the lending pool PDA
+      const poolVault = await deriveAssociatedTokenAddress(
+        lendingPoolPubkey,
+        mintPubkey
       );
       
-      // TODO: Uncomment when contract is fully deployed and tested
-      // const program = getProgram(PROGRAM_IDS.borrowing);
-      // const instruction = await program.methods
-      //   .borrowFromLendingPool(new BN(amount * 1e9))
-      //   .accounts({
-      //     collateralPool: collateralPoolPubkey,
-      //     borrowerState: borrowerPDA,
-      //     borrower: borrowerPubkey,
-      //   })
-      //   .instruction();
-      //
-      // const transaction = new Transaction();
-      // transaction.add(instruction);
-      //
-      // const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      // transaction.recentBlockhash = blockhash;
-      // transaction.feePayer = borrowerPubkey;
-      //
-      // const provider = walletProvider as unknown as SolanaProvider;
-      // const signedTx = await provider.signTransaction(transaction);
-      // const signature = await connection.sendRawTransaction(signedTx.serialize());
-      // await connection.confirmTransaction({
-      //   signature,
-      //   blockhash,
-      //   lastValidBlockHeight
-      // });
-      //
-      // console.log('Borrow successful with signature:', signature);
-      // return signature;
+      // Get borrower's token account
+      const borrowerTokenAccount = await deriveAssociatedTokenAddress(
+        borrowerPubkey,
+        mintPubkey
+      );
+      
+      console.log('Borrowing', amount, 'Test USDC from lending pool:', lendingPoolAddress);
+      console.log('Borrower PDA:', borrowerPDA.toString());
+      console.log('Lending Pool:', lendingPoolPubkey.toString());
+      console.log('Pool Vault:', poolVault.toBase58());
+      console.log('Borrower Token Account:', borrowerTokenAccount.toBase58());
+      
+      // Check if borrower's token account exists, create if not
+      const borrowerTokenAccountInfo = await connection.getAccountInfo(borrowerTokenAccount);
+      const transaction = new Transaction();
+      
+      if (!borrowerTokenAccountInfo) {
+        console.log('Creating borrower token account...');
+        const createAtaIx = createAssociatedTokenAccountInstruction(
+          borrowerPubkey, // payer
+          borrowerTokenAccount, // ata
+          borrowerPubkey, // owner
+          mintPubkey, // mint
+          getTokenProgramId(),
+          new PublicKey(ASSOCIATED_TOKEN_PROGRAM_ID)
+        );
+        transaction.add(createAtaIx);
+      }
+      
+      // Build borrow instruction
+      const amountLamports = Math.floor(amount * 1e6); // 6 decimals for USDC
+      
+      // Discriminator for borrow_from_lending_pool instruction
+      const discriminator = Buffer.from([99, 60, 94, 213, 230, 176, 124, 233]); // borrow_from_lending_pool
+      const amountBuffer = Buffer.alloc(8);
+      amountBuffer.writeBigUInt64LE(BigInt(amountLamports));
+      const data = Buffer.concat([discriminator, amountBuffer]);
+      
+      // The borrow_from_lending_pool function accounts:
+      // 1. lending_pool (mut)
+      // 2. pool_vault (mut)
+      // 3. borrower_token_account (mut)
+      // 4. borrower_state (mut, PDA, init_if_needed)
+      // 5. borrower (mut, signer)
+      // 6. lending_program (for CPI)
+      // 7. token_program
+      // 8. system_program
+      const borrowInstruction = new TransactionInstruction({
+        keys: [
+          { pubkey: lendingPoolPubkey, isSigner: false, isWritable: true },
+          { pubkey: poolVault, isSigner: false, isWritable: true },
+          { pubkey: borrowerTokenAccount, isSigner: false, isWritable: true },
+          { pubkey: borrowerPDA, isSigner: false, isWritable: true },
+          { pubkey: borrowerPubkey, isSigner: true, isWritable: true },
+          { pubkey: lendingProgramId, isSigner: false, isWritable: false },
+          { pubkey: getTokenProgramId(), isSigner: false, isWritable: false },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: borrowingProgramId,
+        data,
+      });
+
+      transaction.add(borrowInstruction);
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = borrowerPubkey;
+
+      console.log('Transaction prepared, signing...');
+      
+      if (!walletProvider) {
+        throw new Error('Wallet provider not available');
+      }
+
+      const provider = walletProvider as unknown as SolanaProvider;
+      
+      let signedTx;
+      try {
+        signedTx = await provider.signTransaction(transaction);
+      } catch (signError) {
+        console.error('Error signing transaction:', signError);
+        const errorMessage = signError instanceof Error ? signError.message : 'Please ensure your wallet is unlocked and connected';
+        throw new Error(`Failed to sign transaction: ${errorMessage}`);
+      }
+      
+      console.log('Transaction signed, sending...');
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      console.log('Transaction sent, confirming...');
+      
+      await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      });
+
+      console.log('Borrow successful with signature:', signature);
+      return signature;
     } catch (error) {
       console.error('Error borrowing:', error);
       throw error;
@@ -220,9 +285,9 @@ export function useBorrowing() {
   }, [isConnected, address, walletProvider]);
 
   const repay = useCallback(async (
-    collateralPoolAddress: string,
     lendingPoolAddress: string,
-    amount: number
+    amount: number,
+    tokenMint?: string
   ): Promise<string> => {
     if (!isConnected || !address || !walletProvider) {
       throw new Error('Wallet not connected');
@@ -231,8 +296,11 @@ export function useBorrowing() {
     try {
       const connection = getConnection();
       const borrowerPubkey = new PublicKey(address);
-      const collateralPoolPubkey = new PublicKey(collateralPoolAddress);
       const lendingPoolPubkey = new PublicKey(lendingPoolAddress);
+      const mintPubkey = new PublicKey(tokenMint || TOKEN_MINTS.testUsdc);
+      
+      // Derive collateral pool PDA from the mint
+      const [collateralPoolPubkey] = await deriveCollateralPoolPDA(mintPubkey);
       
       // Derive borrower PDA
       const [borrowerPDA] = await deriveBorrowerPDA(borrowerPubkey, collateralPoolPubkey);

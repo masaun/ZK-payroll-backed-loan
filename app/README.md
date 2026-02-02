@@ -1,151 +1,81 @@
-# Payroll-Backed Loan - Solana + zkTLS Demo
+# ZK Payroll-Backed Loan - Frontend Application
 
-A Next.js application demonstrating privacy-preserving payroll verification using **Reclaim Protocol's zkTLS technology** on Solana.
 
-## 🌟 Features
+## 🛠️ Technology Stack
+- **Noir ZK circuit**: **`bb.js`** (`v3.0.0-devnet.6-patch.1`) and **`@noir-lang/noir_js`** (`v1.0.0-beta.18`) - Proving backend for Noir circuits. In this project, this is used for the `off-chain` verificaton on client-side as well.
+- **zkTLS**: Reclaim Protocol JS SDK
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Blockchain**: Solana (via Reown AppKit)
+- **Wallet**: Reown AppKit with Solana adapter
 
-- 🔐 **zkTLS Proof Generation**: Verify payroll data without sharing credentials
-- 💎 **Solana Integration**: Connect with Solana wallets using Reown AppKit
-- 🎨 **Modern UI**: Beautiful Next.js 15 + React 19 interface
-- 🛡️ **Secure Backend**: Server-side proof verification
-- 📱 **Multiple Verification Methods**: QR code, browser extension, or mobile app
+## Installation
 
-## 🚀 Quick Start
+### Prerequisites
 
-### 1. Install Dependencies
+- **Node.js** v16 or higher
+- **npm** or **yarn** package manager
+- **Solana wallet** (Phantom, Solflare, etc.)
+- **Reclaim Protocol account** (for zkTLS) - [Sign up here](https://dev.reclaimprotocol.org/)
+- **Reown AppKit Project ID** - [Get one here](https://dashboard.reown.com)
+
+### Step 1: Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Configure Solana Wallet (Reown AppKit)
-
-1. Go to [Reown Dashboard](https://dashboard.reown.com) and create a new project
-2. Copy your `Project ID`
-3. It's already configured in the code, but you can update it if needed
-
-### 3. Configure zkTLS (Reclaim Protocol)
-
+Or with yarn:
 ```bash
-# Copy environment template
-cp .env.local.example .env.local
-
-# Edit .env.local and add your Reclaim credentials
-# Get them from: https://dev.reclaimprotocol.org/
+yarn install
 ```
 
-Required variables:
-- `RECLAIM_APP_ID`: Your Reclaim application ID
-- `RECLAIM_APP_SECRET`: Your Reclaim application secret
-- `RECLAIM_PROVIDER_ID`: Provider ID for payroll verification
+### Step 2: Configure Environment Variables
 
-### 4. Verify Setup
+Create a `.env.local` file in the app directory:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Edit `.env.local` and add your credentials:
+
+```env
+# Reclaim Protocol (zkTLS)
+RECLAIM_APP_ID=your_reclaim_app_id
+RECLAIM_APP_SECRET=your_reclaim_app_secret
+RECLAIM_PROVIDER_ID=your_payroll_provider_id
+
+# Optional: Reown AppKit (if customizing)
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_project_id
+```
+
+**Get Your Credentials:**
+- **Reclaim Protocol**: Visit [Reclaim DevTool](https://dev.reclaimprotocol.org/) and follow the [API Key Guide](https://docs.reclaimprotocol.org/api-key)
+- **Reown AppKit**: Create a project at [Reown Dashboard](https://dashboard.reown.com)
+
+### Step 3: Verify Setup (Optional)
+
+Run the verification script to check your configuration:
 
 ```bash
 ./verify-setup.sh
 ```
 
-### 5. Run Development Server
+### Step 4: Run Development Server
 
 ```bash
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
+The application will be available at [http://localhost:3000](http://localhost:3000)
 
-## 📁 Project Structure
+### Step 5: Build for Production
 
-```
-app/
-├── src/
-│   ├── app/
-│   │   ├── api/reclaim/              # zkTLS API routes
-│   │   ├── page.tsx                  # Main page
-│   │   └── layout.tsx
-│   ├── components/
-│   │   ├── ZkTlsButton.tsx          # zkTLS proof generation button
-│   │   ├── ActionButtonList.tsx      # Wallet actions
-│   │   └── ConnectButton.tsx
-│   ├── hooks/
-│   │   └── useZkTlsProof.ts         # zkTLS integration hook
-│   ├── lib/
-│   │   └── zktls/                    # Reclaim SDK integration
-│   └── config/
-│       └── index.ts                  # Solana configuration
-├── .env.local.example                # Environment template
-├── setup-zktls.sh                    # Setup script
-├── verify-setup.sh                   # Verification script
-├── ZKTLS_INTEGRATION.md             # Detailed integration guide
-├── INTEGRATION_SUMMARY.md            # Implementation summary
-└── QUICK_REFERENCE.md               # Quick reference guide
+```bash
+npm run build
+npm run start
 ```
 
-## 🔐 How It Works
-
-1. **Connect Wallet**: User connects their Solana wallet
-2. **Request Proof** (CLIENT-SIDE): User clicks "Request zkTLS Proof Generation"
-3. **Create Request** (CLIENT-SIDE): Proof request is created directly in the browser
-4. **Verify Identity**: User scans QR code and authenticates with payroll provider
-5. **Generate Proof**: zkTLS proof is generated securely
-6. **Verify Proof** (SERVER-SIDE): Backend verifies the proof cryptographically
-7. **Display Data**: Verified payroll data is displayed
-
-**Architecture:**
-- **Client-Side**: Proof request creation & generation (using `useZkTlsProof` hook)
-- **Server-Side**: Proof verification only (for security)
-
-## 📚 Documentation
-
-- **[ZKTLS_INTEGRATION.md](./ZKTLS_INTEGRATION.md)**: Comprehensive integration guide
-- **[INTEGRATION_SUMMARY.md](./INTEGRATION_SUMMARY.md)**: What was implemented
-- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)**: Quick reference card
-
-## 🛠️ Technology Stack
-
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **Blockchain**: Solana (via Reown AppKit)
-- **zkTLS**: Reclaim Protocol JS SDK
-- **Wallet**: Reown AppKit with Solana adapter
-
-## 📖 Usage Example
-
-### Using the zkTLS Button Component
-
-```tsx
-import { ZkTlsButton } from '@/components/ZkTlsButton';
-
-export default function Page() {
-  return (
-    <div>
-      <h1>Verify Your Payroll</h1>
-      <ZkTlsButton />
-    </div>
-  );
-}
-```
-
-### Using the zkTLS Hook
-
-```tsx
-import { useZkTlsProof } from '@/hooks/useZkTlsProof';
-
-function MyComponent() {
-  const { isGenerating, error, proofData, requestProof } = useZkTlsProof();
-  
-  return (
-    <button onClick={() => requestProof(walletAddress)}>
-      {isGenerating ? 'Generating...' : 'Verify Payroll'}
-    </button>
-  );
-}
-```
-
-## 🔒 Security
-
-- Server-side proof verification
-- Environment variables for sensitive credentials
-- No credential sharing with third parties
-- Cryptographic proof validation
 
 ## 🐛 Troubleshooting
 
@@ -159,20 +89,23 @@ Common issues:
 - **Server won't start**: Restart after adding env variables
 - **Proof fails**: Check provider ID is correct
 
-## 📚 Resources
+## References
 
-- [Reclaim Protocol Docs](https://docs.reclaimprotocol.org/)
-- [Reclaim DevTool](https://dev.reclaimprotocol.org/)
-- [Reown AppKit Docs](https://docs.reown.com)
-- [Next.js Docs](https://nextjs.org/docs)
-- [Solana Docs](https://docs.solana.com/)
+### Noir ZK circuit
+- [Noir Language Documentation](https://noir-lang.org/) - ZK circuit programming language
+- [Aztec Documentation](https://docs.aztec.network/) - Proving backend
 
-## 🆘 Support
+### zkTLS & Reclaim Protocol
+- [Reclaim Protocol Documentation](https://docs.reclaimprotocol.org/) - Comprehensive guide
+- [Reclaim Developer Console](https://dev.reclaimprotocol.org/) - Get API credentials
+- [Reclaim JS SDK](https://www.npmjs.com/package/@reclaimprotocol/js-sdk) - npm package
+- [zkTLS Technical Overview](https://docs.reclaimprotocol.org/zktls) - How it works
+- [API Key Guide](https://docs.reclaimprotocol.org/api-key) - Setup instructions
 
-- **Reclaim Protocol**: [Telegram Support](https://t.me/protocolreclaim)
-- **Reown AppKit**: [Dashboard](https://dashboard.reown.com)
+### Solana Development
+- [Solana Documentation](https://docs.solana.com/) - Official Solana docs
+- [Solana Web3.js](https://solana-labs.github.io/solana-web3.js/) - JavaScript SDK
+- [Solana Program Library](https://spl.solana.com/) - Token standards
+- [Reown AppKit for Solana](https://docs.reown.com/appkit/overview) - Wallet integration
 
-## 📝 License
-
-Same as parent project.
 

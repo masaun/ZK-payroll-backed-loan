@@ -6,7 +6,7 @@ import { TransactionModal } from '@/components/TransactionModal';
 import { ConnectButton } from '@/components/ConnectButton';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useLending, type LendingPool, type DepositorAccount } from '@/hooks/useLending';
-import { PROGRAM_IDS } from '@/config';
+import { PROGRAM_IDS, TOKEN_MINTS, POOL_ADDRESSES } from '@/config';
 
 export default function LendPage() {
   const { address, isConnected } = useAppKitAccount();
@@ -20,18 +20,11 @@ export default function LendPage() {
   const [earnedInterest, setEarnedInterest] = useState('0.00');
   const [depositorAccount, setDepositorAccount] = useState<DepositorAccount | null>(null);
 
-  const [pools, setPools] = useState<LendingPool[]>([
-    {
-      address: PROGRAM_IDS.lending,
-      tokenMint: 'USDC',
-      totalDeposits: '1,250,000',
-      totalBorrowed: '400,000',
-      interestRate: '520',
-      utilization: '32',
-      apy: '5.2',
-      minDeposit: '100'
-    }
-  ]);
+  const [pools, setPools] = useState<LendingPool[]>([]);
+
+  useEffect(() => {
+    loadPoolData();
+  }, []);
 
   useEffect(() => {
     if (isConnected && address) {
@@ -39,13 +32,34 @@ export default function LendPage() {
     }
   }, [isConnected, address]);
 
+  const loadPoolData = async () => {
+    try {
+      const poolData = await lending.loadPoolData(POOL_ADDRESSES.lendingPool);
+      if (poolData) {
+        setPools([poolData]);
+      }
+    } catch (error) {
+      console.error('Error loading pool data:', error);
+    }
+  };
+
   const loadUserDeposits = async () => {
     try {
-      console.log('Loading user deposits from contract:', PROGRAM_IDS.lending);
-      const account = await lending.loadUserDeposits(PROGRAM_IDS.lending);
+      console.log('Loading user deposits from lending pool:', POOL_ADDRESSES.lendingPool);
+      const account = await lending.loadUserDeposits(POOL_ADDRESSES.lendingPool);
       setDepositorAccount(account);
       if (account) {
-        setUserDeposit((parseFloat(account.depositedAmount) / 1e9).toFixed(2));
+        // Convert from lamports (6 decimals for Test USDC)
+        const depositedAmount = parseFloat(account.depositedAmount) / 1e6;
+        setUserDeposit(depositedAmount.toFixed(2));
+        
+        // Calculate earned interest (simple placeholder calculation)
+        // In production, this should come from the contract
+        const earnedInterest = depositedAmount * 0.05 * 0.01; // 5% APR, rough estimate
+        setEarnedInterest(earnedInterest.toFixed(2));
+      } else {
+        setUserDeposit('0.00');
+        setEarnedInterest('0.00');
       }
     } catch (error) {
       console.error('Error loading deposits:', error);
@@ -60,13 +74,22 @@ export default function LendPage() {
 
     setLoading(true);
     try {
-      console.log('Depositing to contract:', PROGRAM_IDS.lending);
-      const signature = await lending.deposit(PROGRAM_IDS.lending, parseFloat(depositAmount));
+      console.log('Depositing Test USDC to lending pool:', POOL_ADDRESSES.lendingPool);
+      const signature = await lending.deposit(
+        POOL_ADDRESSES.lendingPool, 
+        parseFloat(depositAmount),
+        TOKEN_MINTS.testUsdc
+      );
       
-      alert(`Deposit successful!\nTransaction: ${signature}`);
+      alert(`Deposit successful!\n${depositAmount} Test USDC deposited\nTransaction: ${signature}`);
       setShowDepositModal(false);
       setDepositAmount('');
-      loadUserDeposits();
+      
+      // Wait a moment for transaction to finalize, then reload data
+      setTimeout(() => {
+        loadUserDeposits();
+        loadPoolData();
+      }, 2000);
     } catch (error) {
       console.error('Deposit error:', error);
       alert('Deposit failed: ' + (error as Error).message);
@@ -83,13 +106,22 @@ export default function LendPage() {
 
     setLoading(true);
     try {
-      console.log('Withdrawing from contract:', PROGRAM_IDS.lending);
-      const signature = await lending.withdraw(PROGRAM_IDS.lending, parseFloat(withdrawAmount));
+      console.log('Withdrawing Test USDC from lending pool:', POOL_ADDRESSES.lendingPool);
+      const signature = await lending.withdraw(
+        POOL_ADDRESSES.lendingPool, 
+        parseFloat(withdrawAmount),
+        TOKEN_MINTS.testUsdc
+      );
       
-      alert(`Withdrawal successful!\nTransaction: ${signature}`);
+      alert(`Withdrawal successful!\n${withdrawAmount} Test USDC withdrawn\nTransaction: ${signature}`);
       setShowWithdrawModal(false);
       setWithdrawAmount('');
-      loadUserDeposits();
+      
+      // Wait a moment for transaction to finalize, then reload data
+      setTimeout(() => {
+        loadUserDeposits();
+        loadPoolData();
+      }, 2000);
     } catch (error) {
       console.error('Withdraw error:', error);
       alert('Withdrawal failed: ' + (error as Error).message);
@@ -176,7 +208,7 @@ export default function LendPage() {
                     disabled={!isConnected}
                   >
                     <i className="bi bi-wallet2 me-2"></i>
-                    Lend Now
+                    Deposit
                   </button>
                   {!isConnected && (
                     <small className="text-muted d-block mt-2">
@@ -301,7 +333,7 @@ export default function LendPage() {
                               className="btn btn-primary"
                               onClick={() => setShowDepositModal(true)}
                             >
-                              Supply
+                              Deposit
                             </button>
                             <button 
                               className="btn btn-outline-primary"
@@ -338,10 +370,10 @@ export default function LendPage() {
               onChange={(e) => setDepositAmount(e.target.value)}
               disabled={loading}
             />
-            <span className="input-group-text">USDC</span>
+            <span className="input-group-text">Test USDC</span>
           </div>
           <div className="form-text">
-            Available: 1,000.00 USDC
+            Available: 1,000.00 Test USDC
           </div>
         </div>
 
@@ -353,7 +385,7 @@ export default function LendPage() {
           <div className="d-flex justify-content-between">
             <span className="text-muted">Estimated earnings (yearly)</span>
             <span style={{ fontWeight: 600 }}>
-              {depositAmount ? (parseFloat(depositAmount) * 0.052).toFixed(2) : '0.00'} USDC
+              {depositAmount ? (parseFloat(depositAmount) * 0.052).toFixed(2) : '0.00'} Test USDC
             </span>
           </div>
         </div>
@@ -385,10 +417,10 @@ export default function LendPage() {
               onChange={(e) => setWithdrawAmount(e.target.value)}
               disabled={loading}
             />
-            <span className="input-group-text">USDC</span>
+            <span className="input-group-text">Test USDC</span>
           </div>
           <div className="form-text">
-            Deposited: {userDeposit} USDC
+            Deposited: {userDeposit} Test USDC
           </div>
         </div>
 

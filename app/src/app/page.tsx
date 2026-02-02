@@ -59,10 +59,10 @@ export default function HomePage() {
             <div className="card shadow">
               <div className="card-body p-5">
                 <h1 className="mb-4" style={{ fontWeight: 700 }}>
-                  Welcome to ZK Payroll Loan
+                  Welcome to ZK Payroll-Backed Loan
                 </h1>
                 <p className="lead mb-4 text-muted">
-                  Privacy-preserving payroll-backed lending platform
+                  Privacy-preserving Payroll-backed Loan platform
                 </p>
                 <ConnectButton />
               </div>
