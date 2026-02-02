@@ -4,6 +4,8 @@ This project is the ZK Payroll-Backed Loan platform on Solana (Devnet) that enab
 - proving a borrower's **payroll/income** through `zkTLS` protocol.
 - proving a borrower's **loan eligibility** through `Noir` ZK circuits.
 
+<br>
+
 ## Overview
 
 This project demonstrates a novel approach to decentralized lending by combining:
@@ -14,12 +16,16 @@ This project demonstrates a novel approach to decentralized lending by combining
 
 The system allows users to obtain loans based on their `verified payroll/income` and `verified loan eligibility` without requiring any collateral and a long loan eligibility valification process while preserving user privacy.
 
+<br>
+
 ## Technical Stack
 
-### Zero-Knowledge Proofs
-- **`Noir`** - Privacy-focused programming language for ZK circuits
-- **Aztec `bb.js`** - Proving backend for Noir circuits. In this project, this is used for the `off-chain` verificaton on client-side as well.
+### `Noir` Zero-Knowledge Proofs circuit
+- **`Noir`** (`v1.0.0-beta.18`) - Privacy-focused programming language for ZK circuits
+  - **`bb.js`** (`v3.0.0-devnet.6-patch.1`) and **`@noir-lang/noir_js`** (`v1.0.0-beta.18`) - Proving backend for Noir circuits. In this project, this is used for the `off-chain` verificaton on client-side as well.
 
+
+### `zkTLS` protocol
 - **Reclaim Protocol** - zkTLS proof generation and verification
 - **Poseidon Hash** - ZK-friendly cryptographic hash function
 
@@ -34,6 +40,7 @@ The system allows users to obtain loans based on their `verified payroll/income`
 ### Frontend
 - See the README in the [./app directory]().
 
+<br>
 
 
 ## What Each ZK Proof Verifies
@@ -255,6 +262,8 @@ nullifier = poseidon_hash_2(jurisdiction_code, allowed_jurisdiction_root)
 └─────────────────────────────────────────────────────────────┘
 ```
 
+<br>
+
 
 ## DEMO Video
 
@@ -290,20 +299,21 @@ nullifier = poseidon_hash_2(jurisdiction_code, allowed_jurisdiction_root)
 
 - Integrate `SunSpot` in order to realize the on-chain verification of ZK Payroll-Backed Loan Proof using Noir ZK circuit on Solana Devnet
 
+<br>
 
 ## References
 
-### `Noir` ZK circuit
+#### `Noir` ZK circuit
 - [Noir Language Documentation](https://noir-lang.org/)
 - [Aztec Documentation](https://docs.aztec.network/)
 
-### zkTLS & Reclaim Protocol
+#### zkTLS & Reclaim Protocol
 - [Reclaim Protocol Documentation](https://docs.reclaimprotocol.org/)
 - [Reclaim Developer Console](https://dev.reclaimprotocol.org/)
 - [zkTLS Overview](https://docs.reclaimprotocol.org/zktls)
 - [Reclaim JS SDK](https://www.npmjs.com/package/@reclaimprotocol/js-sdk)
 
-### Solana Development
+#### Solana Development
 - [Solana Documentation](https://docs.solana.com/)
 - [Anchor Framework](https://www.anchor-lang.com/)
 - [Solana Program Library (SPL)](https://spl.solana.com/)
