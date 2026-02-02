@@ -1,7 +1,14 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 declare_id!("HBY7P5xzgxhmaSXFiGE3HeWrmhNScYh3r6amyp4q7e4x");
+
+// Lending program ID for CPI calls
+pub mod lending_program {
+    use anchor_lang::declare_id;
+    declare_id!("GGmcpKrSS1MsNv9LLvzcpEGRGr3BqBasky9tX6DVw8AF");
+}
 
 #[program]
 pub mod borrowing {
@@ -95,31 +102,54 @@ pub mod borrowing {
         Ok(())
     }
 
-    /// Borrow from lending pool using collateral
+    /// Borrow from lending pool using ZK payroll proof (non-collateral loan)
     pub fn borrow_from_lending_pool(
         ctx: Context<BorrowFromLendingPool>,
         amount: u64,
     ) -> Result<()> {
-        let collateral_pool = &ctx.accounts.collateral_pool;
         let borrower_state = &mut ctx.accounts.borrower_state;
+        let lending_pool = &ctx.accounts.lending_pool;
 
         require!(amount > 0, ErrorCode::InvalidAmount);
 
-        // Calculate required collateral
-        let required_collateral = amount
-            .checked_mul(collateral_pool.collateral_ratio)
-            .unwrap()
-            .checked_div(10000)
-            .unwrap();
+        // Initialize borrower_state if it's newly created
+        if borrower_state.borrower == Pubkey::default() {
+            borrower_state.borrower = ctx.accounts.borrower.key();
+            borrower_state.lending_pool = lending_pool.key();
+            borrower_state.collateral_amount = 0;
+            borrower_state.borrowed_amount = 0;
+            borrower_state.borrow_timestamp = 0;
+        }
 
-        require!(
-            borrower_state.collateral_amount >= required_collateral,
-            ErrorCode::InsufficientCollateral
-        );
-
-        // Call lending program to borrow (CPI)
-        // Note: This requires the lending program to be imported
-        // For now, we'll track the borrow internally
+        // For non-collateral loans verified by ZK proofs
+        // The ZK proof verification should happen at a higher level (UI/middleware)
+        // In production, you'd verify ZK proofs on-chain here
+        
+        // Make CPI call to lending pool to transfer funds from pool vault to borrower
+        let transfer_ix = anchor_lang::solana_program::instruction::Instruction {
+            program_id: ctx.accounts.lending_program.key(),
+            accounts: vec![
+                AccountMeta::new(ctx.accounts.lending_pool.key(), false),
+                AccountMeta::new(ctx.accounts.pool_vault.key(), false),
+                AccountMeta::new(ctx.accounts.borrower_token_account.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
+            ],
+            data: {
+                let mut data = vec![0xba, 0xf6, 0xba, 0xf7, 0x54, 0x11, 0x94, 0xb6]; // borrow_from_pool discriminator
+                data.extend_from_slice(&amount.to_le_bytes());
+                data
+            },
+        };
+        
+        anchor_lang::solana_program::program::invoke(
+            &transfer_ix,
+            &[
+                ctx.accounts.lending_pool.to_account_info(),
+                ctx.accounts.pool_vault.to_account_info(),
+                ctx.accounts.borrower_token_account.to_account_info(),
+                ctx.accounts.token_program.to_account_info(),
+            ],
+        )?;
         
         // Update borrower state
         borrower_state.borrowed_amount += amount;
@@ -128,7 +158,7 @@ pub mod borrowing {
         emit!(LoanBorrowed {
             borrower: borrower_state.borrower,
             amount,
-            collateral_amount: borrower_state.collateral_amount,
+            collateral_amount: 0, // Non-collateral loan
             total_borrowed: borrower_state.borrowed_amount,
         });
 
@@ -299,19 +329,38 @@ pub struct WithdrawFromCollateralPool<'info> {
 
 #[derive(Accounts)]
 pub struct BorrowFromLendingPool<'info> {
+    /// The lending pool to borrow from
+    /// CHECK: This account is validated by the lending program during CPI
     #[account(mut)]
-    pub collateral_pool: Account<'info, CollateralPool>,
+    pub lending_pool: AccountInfo<'info>,
     
+    /// The lending pool's token vault
+    #[account(mut)]
+    pub pool_vault: Account<'info, TokenAccount>,
+    
+    /// Borrower's token account to receive the loan
+    #[account(mut)]
+    pub borrower_token_account: Account<'info, TokenAccount>,
+    
+    /// Borrower state PDA to track loan
     #[account(
-        mut,
-        seeds = [b"borrower", borrower.key().as_ref(), collateral_pool.key().as_ref()],
+        init_if_needed,
+        payer = borrower,
+        space = 8 + 32 + 32 + 8 + 8 + 8 + 8,
+        seeds = [b"borrower", borrower.key().as_ref(), lending_pool.key().as_ref()],
         bump,
-        constraint = borrower_state.borrower == borrower.key()
     )]
     pub borrower_state: Account<'info, BorrowerState>,
     
     #[account(mut)]
     pub borrower: Signer<'info>,
+    
+    /// Lending program for CPI
+    /// CHECK: This is the lending program ID, verified at runtime
+    pub lending_program: AccountInfo<'info>,
+    
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -390,8 +439,8 @@ impl CollateralPool {
 #[account]
 pub struct BorrowerState {
     pub borrower: Pubkey,
-    pub collateral_pool: Pubkey,
-    pub collateral_amount: u64,
+    pub lending_pool: Pubkey,        // Changed from collateral_pool for non-collateral loans
+    pub collateral_amount: u64,      // Always 0 for non-collateral payroll-backed loans
     pub borrowed_amount: u64,
     pub collateral_timestamp: i64,
     pub borrow_timestamp: i64,

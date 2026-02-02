@@ -94,6 +94,21 @@ export async function deriveDepositorPDA(
 }
 
 /**
+ * Derive a PDA for a collateral pool
+ * @param collateralMint - The collateral token mint public key
+ * @returns The PDA and bump seed
+ */
+export async function deriveCollateralPoolPDA(
+  collateralMint: PublicKey
+): Promise<[PublicKey, number]> {
+  const programId = getBorrowingProgramId();
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from('collateral_pool'), collateralMint.toBuffer()],
+    programId
+  );
+}
+
+/**
  * Derive a PDA for a borrower account in the collateral pool
  * @param borrower - The borrower's public key
  * @param collateralPool - The collateral pool's public key

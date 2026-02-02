@@ -18,7 +18,7 @@ export const Navigation: React.FC = () => {
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
       <div className="container-fluid">
         <Link href="/" className="navbar-brand" style={{ fontWeight: 700, fontSize: '1.25rem' }}>
-          ZK Payroll Loan
+          ZK Payroll-Backed Loan
         </Link>
         <button 
           className="navbar-toggler" 

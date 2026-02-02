@@ -7,6 +7,11 @@ import {
   TransactionInstruction,
   SYSVAR_RENT_PUBKEY
 } from '@solana/web3.js';
+import { 
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction
+} from '@solana/spl-token';
 import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
 import { 
   getLendingProgramId, 
@@ -211,15 +216,30 @@ export function useLending() {
       );
       
       // Get depositor's token account
-      const depositorTokenAccount = await deriveAssociatedTokenAddress(
-        depositorPubkey,
-        mintPubkey
+      const depositorTokenAccount = await getAssociatedTokenAddress(
+        mintPubkey,
+        depositorPubkey
       );
       
       console.log('Depositing', amount, 'Test USDC to lending pool:', lendingPoolAddress);
       console.log('Depositor PDA:', depositorPDA.toBase58());
       console.log('Pool Vault:', poolVault.toBase58());
       console.log('Depositor Token Account:', depositorTokenAccount.toBase58());
+      
+      // Check if depositor's token account exists
+      const accountInfo = await connection.getAccountInfo(depositorTokenAccount);
+      const transaction = new Transaction();
+      
+      if (!accountInfo) {
+        console.log('Creating depositor token account:', depositorTokenAccount.toBase58());
+        const createTokenAccountIx = createAssociatedTokenAccountInstruction(
+          depositorPubkey, // payer
+          depositorTokenAccount, // associated token account
+          depositorPubkey, // owner
+          mintPubkey // mint
+        );
+        transaction.add(createTokenAccountIx);
+      }
       
       // Build deposit instruction
       const amountLamports = Math.floor(amount * 1e6); // 6 decimals for USDC
@@ -237,14 +257,14 @@ export function useLending() {
           { pubkey: poolVault, isSigner: false, isWritable: true },
           { pubkey: depositorTokenAccount, isSigner: false, isWritable: true },
           { pubkey: depositorPubkey, isSigner: true, isWritable: true },
-          { pubkey: getTokenProgramId(), isSigner: false, isWritable: false },
+          { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ],
         programId,
         data,
       });
 
-      const transaction = new Transaction().add(depositInstruction);
+      transaction.add(depositInstruction);
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = depositorPubkey;

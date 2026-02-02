@@ -7,7 +7,7 @@ import { ConnectButton } from '@/components/ConnectButton';
 import { ZkProofProgress } from '@/components/ZkProofProgress';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useBorrowing } from '@/hooks/useBorrowing';
-import { PROGRAM_IDS, TOKEN_MINTS } from '@/config';
+import { PROGRAM_IDS, TOKEN_MINTS, POOL_ADDRESSES } from '@/config';
 import { 
   generateAndVerifyPayrollBackedLoanProof, 
   createSamplePayrollBackedLoanInputs,
@@ -59,8 +59,8 @@ export default function BorrowPage() {
 
   const loadBorrowerState = async () => {
     try {
-      console.log('Loading borrower state from contract:', PROGRAM_IDS.borrowing);
-      const state = await borrowing.loadBorrowerState(PROGRAM_IDS.borrowing);
+      console.log('Loading borrower state for lending pool:', POOL_ADDRESSES.lendingPool);
+      const state = await borrowing.loadBorrowerState(POOL_ADDRESSES.lendingPool);
       // setBorrowerState(state);
       if (state) {
         setUserBorrowed((parseFloat(state.borrowedAmount) / 1e9).toFixed(2));
@@ -96,8 +96,8 @@ export default function BorrowPage() {
     
     try {
       // Step 1: Retrieve Payroll Proof via zkTLS (Reclaim Protocol)
-      console.log('Step 1: Retrieving payroll proof via zkTLS...');
-      setZkProofStage('Retrieving payroll proof via zkTLS');
+      console.log('Step 1: Retrieving ZK Payroll Proof via zkTLS...');
+      setZkProofStage('Retrieving ZK Payroll Proof via zkTLS');
       setZkProofProgress(10);
       
       // TODO: Replace with actual zkTLS/Reclaim Protocol integration
@@ -105,8 +105,8 @@ export default function BorrowPage() {
       const dummyPayrollAmount = 5000; // Dummy value - will be replaced with actual zkTLS proof
       console.log('Payroll amount from zkTLS proof:', dummyPayrollAmount);
       
-      // Step 2: Generate ZK Payroll Backed Loan Proof
-      console.log('Step 2: Generating ZK Payroll Backed Loan Proof...');
+      // Step 2: Generate ZK Payroll-Backed Loan Proof
+      console.log('Step 2: Generating ZK Payroll-Backed Loan Proof...');
       setZkProofStage('Generating ZK proof');
       setZkProofProgress(20);
       
@@ -132,7 +132,7 @@ export default function BorrowPage() {
       }
       
       // Step 3: ZK Proof Verified
-      console.log('Step 3: ZK Payroll Backed Loan Proof verified successfully ✓');
+      console.log('Step 3: ZK Payroll-Backed Loan Proof verified successfully ✓');
       console.log('Proof:', proofResult.proof);
       console.log('Public inputs:', proofResult.publicInputs);
       setZkProofStage('Proof verified successfully');
@@ -141,13 +141,12 @@ export default function BorrowPage() {
       setShowZkProofProgress(false);
       
       // Step 4: Transfer funds from lending pool to borrower
-      console.log('Step 4: Transferring Test USDC from lending pool to borrower...');
+      console.log('Step 4: Borrower receive a requested-amount of loan in Test USDC, which is transferred from lending pool to borrower...');
       setZkProofStage('Executing loan transfer');
       setZkProofProgress(95);
       
       const signature = await borrowing.borrow(
-        PROGRAM_IDS.borrowing,
-        PROGRAM_IDS.lending,
+        POOL_ADDRESSES.lendingPool,
         parseFloat(borrowAmount),
         TOKEN_MINTS.testUsdc
       );
@@ -187,10 +186,9 @@ export default function BorrowPage() {
 
     setLoading(true);
     try {
-      console.log('Repaying to contracts:', PROGRAM_IDS.borrowing, PROGRAM_IDS.lending);
+      console.log('Repaying to lending pool:', POOL_ADDRESSES.lendingPool);
       const signature = await borrowing.repay(
-        PROGRAM_IDS.borrowing,
-        PROGRAM_IDS.lending,
+        POOL_ADDRESSES.lendingPool,
         parseFloat(repayAmount)
       );
       
@@ -385,7 +383,7 @@ export default function BorrowPage() {
                     </div>
                     <h6 className="fw-semibold">Verify Payroll</h6>
                     <p className="text-muted small">
-                      Connect your payroll data via zkTLS proof (Reclaim Protocol)
+                      Retrieve your payroll data in the form of ZK Payroll Proof via zkTLS Protocol (Reclaim Protocol)
                     </p>
                   </div>
                 </div>
@@ -397,7 +395,7 @@ export default function BorrowPage() {
                     </div>
                     <h6 className="fw-semibold">Generate ZK Proof</h6>
                     <p className="text-muted small">
-                      Privacy-preserving proof of your payroll income
+                      Generate ZK Payroll-Backed Loan Proof based on a ZK Payroll Proof, which represent your payroll income. Then, it will be verified on-chain. 
                     </p>
                   </div>
                 </div>
@@ -465,9 +463,9 @@ export default function BorrowPage() {
           <div className="alert alert-info" role="alert" style={{ fontSize: '0.875rem' }}>
             <strong>How it works:</strong>
             <ol className="mb-0 mt-2 ps-3">
-              <li>Retrieve your payroll proof via zkTLS</li>
-              <li>Generate ZK proof for privacy-preserving verification</li>
-              <li>Verify proof on-chain</li>
+              <li>Retrieve your ZK Payroll Proof (icl. Payroll amount, Payroll period, etc) via zkTLS protocol (Reclaim Protocol)</li>
+              <li>Generate your ZK Payroll-Backed Loan Proof for verifying whether your payroll data (i.e. Payroll amount, Payroll period, etc) meets the required-loan conditions without disclosing the sensitive information</li>
+              <li>Verify a ZK Payroll-Backed Loan Proof on-chain</li>
               <li>Receive funds instantly (no collateral needed)</li>
             </ol>
           </div>
