@@ -203,13 +203,13 @@ export default function CredentialPage() {
           <div className="card shadow-sm border-primary" style={{ borderWidth: '2px' }}>
             <div className="card-header bg-primary text-white py-3">
               <h5 className="mb-0" style={{ fontWeight: 600 }}>
-                🔐 Generate ZK-TLS Proof
+                🔐 Generate your ZK Payroll Proof using zkTLS Protocol
               </h5>
             </div>
             <div className="card-body">
               <p className="mb-3">
-                Prove your payroll income using zkTLS without revealing sensitive data.
-                This generates a zero-knowledge proof of your employment and salary.
+                Prove your payroll income using zkTLS protocol (Reclaim Protocol) without revealing sensitive data.
+                This generates a ZK Payroll Proof, which is a zero-knowledge proof of your employment and salary.
               </p>
               <div className="row g-3">
                 <div className="col-md-6">
@@ -355,9 +355,9 @@ export default function CredentialPage() {
                       1
                     </div>
                     <div>
-                      <h6 style={{ fontWeight: 600 }}>Generate Proof</h6>
+                      <h6 style={{ fontWeight: 600 }}>Generate a ZK Payroll Proof</h6>
                       <p className="text-muted mb-0" style={{ fontSize: '0.875rem' }}>
-                        Create a zero-knowledge proof of your payroll data using zkTLS
+                        Create a ZK Payroll Proof, which is a zero-knowledge proof of your payroll data using zkTLS
                       </p>
                     </div>
                   </div>
@@ -371,7 +371,7 @@ export default function CredentialPage() {
                     <div>
                       <h6 style={{ fontWeight: 600 }}>Store On-Chain</h6>
                       <p className="text-muted mb-0" style={{ fontSize: '0.875rem' }}>
-                        Your proof is stored securely on Solana blockchain
+                        Your ZK Payroll Proof is stored securely on Solana blockchain
                       </p>
                     </div>
                   </div>
@@ -383,9 +383,9 @@ export default function CredentialPage() {
                       3
                     </div>
                     <div>
-                      <h6 style={{ fontWeight: 600 }}>Use for Lending</h6>
+                      <h6 style={{ fontWeight: 600 }}>Use for Requesting a Loan</h6>
                       <p className="text-muted mb-0" style={{ fontSize: '0.875rem' }}>
-                        Verified credentials enable better loan terms
+                        Your ZK Payroll Proof can be used as your verified-credential to enable better loan terms
                       </p>
                     </div>
                   </div>

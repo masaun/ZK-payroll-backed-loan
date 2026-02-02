@@ -231,7 +231,7 @@ export default function BorrowPage() {
         <div className="col-12">
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h1 style={{ fontWeight: 700, fontSize: '2rem' }}>Payroll-Backed Loans</h1>
+              <h1 style={{ fontWeight: 700, fontSize: '2rem' }}>ZK Payroll-Backed Loans</h1>
               <p className="text-muted mb-0">Non-collateral loans based on verified payroll income</p>
             </div>
             <ConnectButton />
@@ -246,7 +246,7 @@ export default function BorrowPage() {
             title="Monthly Payroll" 
             value={`$${payrollAmount}`}
             variant="info"
-            subValue="From zkTLS Proof"
+            subValue="From zkTLS Payroll Proof"
           />
         </div>
         <div className="col-md-4">
@@ -370,7 +370,7 @@ export default function BorrowPage() {
           <div className="card shadow-sm bg-light">
             <div className="card-header bg-white border-0 py-3">
               <h5 className="mb-0" style={{ fontWeight: 600 }}>
-                How Payroll-Backed Loans Work
+                How ZK Payroll-Backed Loans Works
               </h5>
             </div>
             <div className="card-body">
@@ -383,7 +383,7 @@ export default function BorrowPage() {
                     </div>
                     <h6 className="fw-semibold">Verify Payroll</h6>
                     <p className="text-muted small">
-                      Retrieve your payroll data in the form of ZK Payroll Proof via zkTLS Protocol (Reclaim Protocol)
+                      Retrieve your payroll data in the form of ZK Payroll Proof via the zkTLS Protocol (Reclaim Protocol)
                     </p>
                   </div>
                 </div>
@@ -395,7 +395,7 @@ export default function BorrowPage() {
                     </div>
                     <h6 className="fw-semibold">Generate ZK Proof</h6>
                     <p className="text-muted small">
-                      Generate ZK Payroll-Backed Loan Proof based on a ZK Payroll Proof, which represent your payroll income. Then, it will be verified on-chain. 
+                      Generate your ZK Payroll-Backed Loan Proof via the Noir ZK circuit based on your ZK Payroll Proof. Then, it will be verified on-chain. 
                     </p>
                   </div>
                 </div>
@@ -419,7 +419,7 @@ export default function BorrowPage() {
                     </div>
                     <h6 className="fw-semibold">Receive Funds</h6>
                     <p className="text-muted small">
-                      Instant transfer from lending pool to your wallet
+                      A requested-loan amount is instantly transferred from the Lending Pool to your wallet
                     </p>
                   </div>
                 </div>

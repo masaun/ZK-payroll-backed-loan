@@ -62,7 +62,7 @@ export default function HomePage() {
                   Welcome to ZK Payroll-Backed Loan
                 </h1>
                 <p className="lead mb-4 text-muted">
-                  Privacy-preserving payroll-backed lending platform
+                  Privacy-preserving Payroll-backed Loan platform
                 </p>
                 <ConnectButton />
               </div>

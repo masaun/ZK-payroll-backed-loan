@@ -208,7 +208,7 @@ export default function LendPage() {
                     disabled={!isConnected}
                   >
                     <i className="bi bi-wallet2 me-2"></i>
-                    Lend Now
+                    Deposit
                   </button>
                   {!isConnected && (
                     <small className="text-muted d-block mt-2">
@@ -333,7 +333,7 @@ export default function LendPage() {
                               className="btn btn-primary"
                               onClick={() => setShowDepositModal(true)}
                             >
-                              Supply
+                              Deposit
                             </button>
                             <button 
                               className="btn btn-outline-primary"

@@ -1,6 +1,60 @@
-# Solana Smart Contracts for ZK Payroll Backed Loans
+# ZK Payroll-Backed Loan - Solana Smart Contracts
 
-This directory contains three Solana programs (smart contracts) built using the Anchor framework for a decentralized lending platform with zero-knowledge proof verification.
+Solana programs (smart contracts) built with Anchor framework for a decentralized lending platform with zero-knowledge proof verification.
+
+## Overview
+
+This directory contains the on-chain smart contracts that power the ZK Payroll-Backed Loan platform. The system consists of four interconnected Anchor programs deployed on Solana Devnet:
+
+1. **ZK Verifiable Credential Manager** - Stores and manages zero-knowledge proofs (zkTLS payroll proofs)
+2. **Lending Pool** - Manages liquidity from lenders and facilitates borrowing
+3. **Borrowing Pool** - Handles borrowing operations with collateral management
+4. **Test USDC** - Mock USDC token for testing on Devnet
+
+### Architecture Overview
+
+The contracts work together to enable privacy-preserving, payroll-backed lending:
+
+- **Borrowers** deposit collateral or prove payroll via ZK proofs to obtain loans
+- **Lenders** deposit funds into lending pools to earn interest
+- **ZK Proofs** are stored on-chain to verify eligibility without revealing sensitive data
+- **Cross-Program Invocation (CPI)** enables seamless interaction between programs
+
+## Deployed Contract Addresses (Solana Devnet)
+
+### Program IDs
+
+| Program | Program ID (Devnet) |
+|---------|-------------------|
+| **ZK Verifiable Credential Manager** | `5noDS5EGojcw8BuRA9vDAmSUBE8iCY2jnQBhzkyEiU1K` |
+| **Lending Pool** | `G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi` |
+| **Borrowing Pool** | `CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi` |
+| **Test USDC** | `41NBEbnBWvQTLs6TRKCDWH88rJTpdFUvq5WA3zpQGYfY` |
+
+### Verify Deployment
+
+You can verify these programs are deployed on Solana Devnet:
+
+```bash
+# Check ZK Credential Manager
+solana program show 5noDS5EGojcw8BuRA9vDAmSUBE8iCY2jnQBhzkyEiU1K --url devnet
+
+# Check Lending Pool
+solana program show G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi --url devnet
+
+# Check Borrowing Pool
+solana program show CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi --url devnet
+
+# Check Test USDC
+solana program show 41NBEbnBWvQTLs6TRKCDWH88rJTpdFUvq5WA3zpQGYfY --url devnet
+```
+
+### Explorer Links
+
+- [ZK Credential Manager on Solana Explorer](https://explorer.solana.com/address/5noDS5EGojcw8BuRA9vDAmSUBE8iCY2jnQBhzkyEiU1K?cluster=devnet)
+- [Lending Pool on Solana Explorer](https://explorer.solana.com/address/G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi?cluster=devnet)
+- [Borrowing Pool on Solana Explorer](https://explorer.solana.com/address/CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi?cluster=devnet)
+- [Test USDC on Solana Explorer](https://explorer.solana.com/address/41NBEbnBWvQTLs6TRKCDWH88rJTpdFUvq5WA3zpQGYfY?cluster=devnet)
 
 
 ## Programs
@@ -322,91 +376,142 @@ Borrower Wallet            Collateral Pool Vault
 
 
 
-## Prerequisites
-
-- [Rust](https://www.rust-lang.org/tools/install) (latest stable)
-- [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) (v1.17+)
-- [Anchor CLI](https://www.anchor-lang.com/docs/installation) (v0.29.0)
-- [Node.js](https://nodejs.org/) (v16+)
-
 ## Installation
 
-1. Install Anchor CLI:
+### Prerequisites
+
+- **Rust** (latest stable) - [Install Rust](https://www.rust-lang.org/tools/install)
+- **Solana CLI** v1.17+ - [Install Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools)
+- **Anchor CLI** v0.29.0 - [Install Anchor](https://www.anchor-lang.com/docs/installation)
+- **Node.js** v16+ - [Install Node.js](https://nodejs.org/)
+- **Yarn** or **npm** - Package manager
+
+### Step 1: Install Anchor CLI
+
 ```bash
+# Install Anchor Version Manager (AVM)
 cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+
+# Install latest Anchor
 avm install latest
 avm use latest
+
+# Verify installation
+anchor --version
 ```
 
-2. Install dependencies:
+Expected output: `anchor-cli 0.29.0` or higher
+
+### Step 2: Clone and Navigate
+
 ```bash
-anchor build
+cd contracts
 ```
 
-## Building
+### Step 3: Install Dependencies
+
+```bash
+# Install Node.js dependencies for tests
+yarn install
+# or
+npm install
+```
+
+### Step 4: Build Programs
 
 Build all programs:
+
 ```bash
 anchor build
 ```
 
-Build individual programs:
+Or build individually:
+
 ```bash
 cd programs/zk-verifiable-credential-manager && cargo build-bpf
 cd programs/lending && cargo build-bpf
 cd programs/borrowing && cargo build-bpf
+cd programs/test-usdc && cargo build-bpf
 ```
 
-## Testing
+### Step 5: Generate TypeScript Types
 
-Run tests:
 ```bash
-anchor test
+anchor build
 ```
 
-Run tests with logs:
+This generates TypeScript type definitions in `target/types/`
+
+### Step 6: Configure Solana CLI
+
+For Devnet deployment:
+
 ```bash
-anchor test -- --nocapture
-```
-
-## Deployment
-
-### Local Deployment (Localnet)
-
-1. Start local validator:
-```bash
-solana-test-validator
-```
-
-2. Deploy programs:
-```bash
-anchor deploy
-```
-
-### Devnet Deployment
-
-1. Configure for devnet:
-```bash
+# Set cluster to devnet
 solana config set --url devnet
+
+# Create or set keypair
+solana-keygen new --outfile deployer-keypair.json
+
+# Airdrop SOL for deployment (2 SOL minimum)
+solana airdrop 2 --keypair deployer-keypair.json
 ```
 
-2. Airdrop SOL for deployment:
+### Step 7: Run Tests (Optional)
+
 ```bash
-solana airdrop 2
+# Run all tests
+anchor test
+
+# Run with logs
+anchor test -- --nocapture
+
+# Run specific test file
+anchor test -- tests/lending.test.ts
 ```
 
-3. Deploy:
+### Step 8: Deploy to Devnet
+
 ```bash
+# Deploy all programs
 anchor deploy --provider.cluster devnet
+
+# Or use the deployment script
+./deploy.sh
 ```
 
-## Program IDs
+After deployment, the program IDs will be displayed. Update `Anchor.toml` and `app/src/config/index.ts` with the new addresses if needed.
 
-Update these in `Anchor.toml` after deployment:
+### Step 9: Initialize Programs
 
-- **ZK Verifiable Credential Manager**: `CrEd11111111111111111111111111111111111111`
-- **Lending**: `Lend11111111111111111111111111111111111111`
-- **Borrowing**: `Borr11111111111111111111111111111111111111`
+Initialize lending and collateral pools:
+
+```bash
+# Run initialization script
+cd migrations
+./migrate.sh
+
+# Or manually
+ts-node migrations/initialize.ts
+```
+
+### Step 10: Verify Deployment
+
+Check deployment status:
+
+```bash
+./status.sh
+```
+
+Or manually:
+
+```bash
+# Check program deployment
+solana program show <PROGRAM_ID> --url devnet
+
+# Check account data
+solana account <ACCOUNT_ADDRESS> --url devnet
+```
 
 ## Usage Example
 
@@ -529,10 +634,50 @@ await borrowingProgram.methods
 - [ ] Governance mechanism
 - [ ] Emergency pause functionality
 
-## License
+## References
 
-MIT
+### Solana Development
+- [Solana Documentation](https://docs.solana.com/) - Official Solana documentation
+- [Solana Cookbook](https://solanacookbook.com/) - Developer recipes and examples
+- [Solana Program Library (SPL)](https://spl.solana.com/) - Standard token programs
+- [Solana Stack Exchange](https://solana.stackexchange.com/) - Community Q&A
+- [Solana CLI Reference](https://docs.solana.com/cli) - Command-line tools
 
-## Support
+### Anchor Framework
+- [Anchor Documentation](https://www.anchor-lang.com/) - Framework documentation
+- [Anchor Book](https://book.anchor-lang.com/) - Comprehensive guide
+- [Anchor Examples](https://github.com/coral-xyz/anchor/tree/master/examples) - Official examples
+- [Anchor Discord](https://discord.gg/PDeRXyVURd) - Community support
 
-For issues and questions, please open an issue in the repository.
+### Smart Contract Patterns
+- [Solana Program Architecture](https://docs.solana.com/developing/programming-model/overview) - Core concepts
+- [PDA (Program Derived Addresses)](https://solanacookbook.com/core-concepts/pdas.html) - Account derivation
+- [CPI (Cross-Program Invocation)](https://solanacookbook.com/references/programs.html#how-to-do-cross-program-invocation) - Inter-program calls
+- [Token Program Guide](https://spl.solana.com/token) - SPL Token operations
+
+### Testing & Security
+- [Anchor Testing Guide](https://book.anchor-lang.com/anchor_in_depth/testing.html) - Writing tests
+- [Solana Security Best Practices](https://github.com/coral-xyz/sealevel-attacks) - Security patterns
+- [Neodyme Security Guide](https://workshop.neodyme.io/) - Smart contract security
+
+### Project Documentation
+- [Main README](../README.md) - Project overview and architecture
+- [Frontend README](../app/README.md) - Next.js application
+- [Circuits README](../circuits/README.md) - Noir ZK circuits
+- [API Documentation](./docs/README_INIT_POOL.md) - Pool initialization guide
+
+### Tools & Explorers
+- [Solana Explorer](https://explorer.solana.com/) - View transactions and accounts
+- [Solana Beach](https://solanabeach.io/) - Alternative explorer
+- [Anchor Playground](https://beta.solpg.io/) - Browser-based IDE
+
+### Related Projects
+- [Jet Protocol](https://github.com/jet-lab/jet-v2) - DeFi lending on Solana
+- [Solend](https://github.com/solendprotocol/solana-program-library) - Algorithmic lending
+- [Mango Markets](https://github.com/blockworks-foundation/mango-v3) - Margin trading
+
+---
+
+**Built for Solana Privacy Hackathon 🔐 (Jan 12 - Feb 1, 2026)**
+
+**License:** MIT
