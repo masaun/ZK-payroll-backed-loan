@@ -137,9 +137,8 @@ The system allows users to obtain loans based on their `verified payroll/income`
 - ✅ Only eligibility result ("approved" or "denied") is revealed
 
 **Verification Method:**
-- Proof generated client-side using Noir
-- Proof verified on-chain (future: Solana verifier program)
-- Current: Verification happens in TypeScript before transaction submission
+- Proof is generated `client-side` (`off-chain`) using `Noir` ZK circuit
+- Proof is verified `client-side` (`off-chain`) using `bb.js` and `noir_js`
 
 **Circuit Constraints:**
 ```noir
