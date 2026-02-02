@@ -175,10 +175,9 @@ Manages the lending pool where lenders can deposit funds and earn interest.
 
 ### 3. Borrowing Program (`borrowing`)
 
-Manages collateralized borrowing against the lending pool.
+Manages borrowing against the lending pool.
 
 **Functions:**
-- `initialize_collateral_pool()` - Create a new collateral pool
 - `borrow_from_lending_pool()` - Borrow against collateral
 - `repay_to_lending_pool()` - Repay borrowed amount
 - `liquidate()` - Liquidate undercollateralized positions
