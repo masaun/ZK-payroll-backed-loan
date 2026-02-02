@@ -178,14 +178,11 @@ Manages the lending pool where lenders can deposit funds and earn interest.
 Manages borrowing against the lending pool.
 
 **Functions:**
-- `borrow_from_lending_pool()` - Borrow against collateral
+- `borrow_from_lending_pool()` - Borrow against a `ZK Payroll-Backed Loan Proof`, which check the borrower's loan eligibility.
 - `repay_to_lending_pool()` - Repay borrowed amount
-- `liquidate()` - Liquidate undercollateralized positions
 
 **Key Features:**
-- Liquidation threshold protection (e.g., 120%)
-- Automatic collateralization checks
-- Liquidation mechanism for bad debt
+- Liquidation mechanism for bad debt (TBD)
 - PDA-based borrower state tracking
 
 
