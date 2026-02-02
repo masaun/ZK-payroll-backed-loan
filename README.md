@@ -152,7 +152,7 @@ assert(loan_amount <= payroll_amount * repayment_ratio);
 
 **Nullifier Generation:**
 ```noir
-nullifier = poseidon_hash_2(jurisdiction_code, allowed_jurisdiction_root)
+nullifier = poseidon_hash_2(...)
 ```
 
 ## Architecture & Userflow
