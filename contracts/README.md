@@ -116,87 +116,101 @@ Manages collateralized borrowing against the lending pool.
 
 # System Architecture
 
-## Contract Interaction Flow
+## Simple Contract Interaction Flow
+
+### Lending Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                         USER/CLIENT                          │
-│                    (TypeScript/Web3.js)                      │
+│                         LENDER                               │
+│                  (Connected via Wallet)                      │
 └───────────────┬─────────────────────────────────────────────┘
                 │
-                │ 1. Store ZK Proof
+                │ Click "Deposit" with Amount
                 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│        ZK Verifiable Credential Manager Contract            │
+│                  Lending Pool Contract                       │
 │  ┌────────────────────────────────────────────────────┐     │
-│  │ • storeZkTlsProofAndPublicOutput()                 │     │
-│  │ • getZkTlsProofAndPublicOutput()                   │     │
-│  │ • verifyCredential()                                │     │
-│  │ • revokeCredential()                                │     │
+│  │ Function:                                          │     │
+│  │ • deposit_into_lending_pool(amount)                │     │
 │  └────────────────────────────────────────────────────┘     │
 │                                                               │
-│  Storage:                                                     │
-│  ├─ ZkCredential PDA                                          │
-│  │  ├─ proof_data (Vec<u8>)                                  │
-│  │  ├─ public_output (Vec<u8>)                               │
-│  │  ├─ proof_hash ([u8; 32])                                 │
-│  │  ├─ is_verified (bool)                                    │
-│  │  └─ timestamp (i64)                                       │
+│  Action:                                                      │
+│  └─ Transfer Test USDC from Lender → Lending Pool Vault      │
+│                                                               │
+│  Storage Update:                                              │
+│  ├─ LendingPool PDA                                           │
+│  │  ├─ total_deposits += amount                              │
+│  │  └─ pool_vault (holds Test USDC)                          │
+│  └─ DepositorAccount PDA                                      │
+│     ├─ deposited_amount += amount                             │
+│     └─ deposit_timestamp = now()                              │
 └─────────────────────────────────────────────────────────────┘
+```
+
+### Borrowing Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        BORROWER                              │
+│                 (Connected via Wallet)                       │
+└───────────────┬─────────────────────────────────────────────┘
                 │
-                │ 2. Verification Complete
+                │ Click "Request a Loan" with Amount
                 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Lending Contract                          │
+│              STEP 1: Generate ZK Payroll Proof              │
+│                   (Reclaim zkTLS Protocol)                   │
 │  ┌────────────────────────────────────────────────────┐     │
-│  │ Lender Functions:                                  │     │
-│  │ • initializeLendingPool()                          │     │
-│  │ • depositIntoLendingPool()  ─────────┐            │     │
-│  │ • withdrawFromLendingPool() ─────────┤            │     │
-│  │                                       │            │     │
-│  │ Internal Functions (CPI):             │            │     │
-│  │ • borrowFromPool()                    │            │     │
-│  │ • repayToPool()                       │            │     │
-│  └───────────────────────────────────────┼────────────┘     │
-│                                           │                   │
-│  Storage:                                 │                   │
-│  ├─ LendingPool PDA                       │                   │
-│  │  ├─ total_deposits (u64) ─────────────┘                   │
-│  │  ├─ total_borrowed (u64)                                  │
-│  │  ├─ interest_rate (u64)                                   │
-│  │  └─ pool_vault (Pubkey)                                   │
-│  └─ DepositorAccount PDA                                      │
-│     ├─ deposited_amount (u64)                                 │
-│     └─ deposit_timestamp (i64)                                │
-└──────────────────┬──────────────────────────────────────────┘
-                   │
-                   │ CPI Calls
-                   ▼
+│  │ • Borrower authenticates with Payroll Provider     │     │
+│  │   (ADP, Gusto, Workday, etc.)                      │     │
+│  │ • zkTLS generates proof of payroll data            │     │
+│  │ • Proof contains: salary, employment status, etc.  │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                               │
+│  Output: ZK Payroll Proof (zkTLS)                            │
+└───────────────┬─────────────────────────────────────────────┘
+                │
+                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                  Borrowing Contract                          │
+│        STEP 2: Generate ZK Payroll-backed Loan Proof        │
+│                    (Noir ZK Circuit)                         │
 │  ┌────────────────────────────────────────────────────┐     │
-│  │ Borrower Functions:                                │     │
-│  │ • initializeCollateralPool()                       │     │
-│  │ • depositIntoCollateralPool()                      │     │
-│  │ • withdrawFromCollateralPool()                     │     │
-│  │ • borrowFromLendingPool() ────────────┐           │     │
-│  │ • repayToLendingPool() ───────────────┤           │     │
-│  │                                        │           │     │
-│  │ Liquidation:                           │           │     │
-│  │ • liquidate()                          │           │     │
-│  └────────────────────────────────────────┼───────────┘     │
-│                                            │                  │
-│  Storage:                                  │                  │
-│  ├─ CollateralPool PDA                     │                  │
-│  │  ├─ total_collateral (u64)             │                  │
-│  │  ├─ collateral_ratio (u64) ────────────┤ 150%             │
-│  │  ├─ liquidation_threshold (u64) ───────┘ 120%             │
-│  │  └─ pool_vault (Pubkey)                                   │
+│  │ • Takes ZK Payroll Proof as input                  │     │
+│  │ • Verifies loan eligibility:                       │     │
+│  │   - Employment status = active                     │     │
+│  │   - Salary >= minimum threshold                    │     │
+│  │   - Loan amount <= (salary × ratio)                │     │
+│  │   - Tenure >= 12 months                            │     │
+│  │ • Generates ZK Proof of eligibility                │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                               │
+│  Output: ZK Loan Eligibility Proof (Noir)                    │
+└───────────────┬─────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────┐
+│       STEP 3: Transfer Loan from Lending Pool               │
+│                 (Solana Smart Contract)                      │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ Function:                                          │     │
+│  │ • borrow_from_lending_pool(amount)                 │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                               │
+│  Validation:                                                  │
+│  ├─ Verify ZK Proofs (off-chain verification)                │
+│  ├─ Check lending pool has sufficient liquidity              │
+│  └─ Validate borrower eligibility                            │
+│                                                               │
+│  Action:                                                      │
+│  └─ Transfer Test USDC from Lending Pool → Borrower          │
+│                                                               │
+│  Storage Update:                                              │
+│  ├─ LendingPool PDA                                           │
+│  │  └─ total_borrowed += amount                              │
 │  └─ BorrowerState PDA                                         │
-│     ├─ collateral_amount (u64)                                │
-│     ├─ borrowed_amount (u64)                                  │
-│     ├─ collateral_timestamp (i64)                             │
-│     └─ borrow_timestamp (i64)                                 │
+│     ├─ borrowed_amount = amount                               │
+│     └─ borrow_timestamp = now()                               │
 └─────────────────────────────────────────────────────────────┘
 ```
 

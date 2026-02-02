@@ -12,8 +12,8 @@ This is the user-facing web application that combines zkTLS payroll verification
 
 ### Key Features
 
-- 🔐 **zkTLS Payroll Verification**: Verify employment and income using Reclaim Protocol without sharing credentials
-- 🧮 **Noir ZK Circuit Integration**: Generate and verify loan eligibility proofs client-side
+- 🔐 **zkTLS Payroll Proof Verification**: Generate a zkTLS Payroll Proof to prove a borrower's payroll/income and employment using Reclaim Protocol without sharing credentials
+- 🧮 **Noir ZK Circuit Integration**: Generate a ZK Payroll-Backed Loan Proof to prove a loan eligibility of borrower, on client-side
 - 💎 **Solana Wallet Integration**: Connect wallets via Reown AppKit for seamless transactions
 - 🎨 **Modern UI**: Built with Next.js 15, React 19, and Bootstrap 5
 - 🛡️ **Privacy-First**: All sensitive data processed via zero-knowledge proofs
@@ -87,46 +87,6 @@ npm run build
 npm run start
 ```
 
-## 📁 Project Structure
-
-```
-app/
-├── src/
-│   ├── app/
-│   │   ├── api/reclaim/              # zkTLS API routes
-│   │   ├── page.tsx                  # Main page
-│   │   └── layout.tsx
-│   ├── components/
-│   │   ├── ZkTlsButton.tsx          # zkTLS proof generation button
-│   │   ├── ActionButtonList.tsx      # Wallet actions
-│   │   └── ConnectButton.tsx
-│   ├── hooks/
-│   │   └── useZkTlsProof.ts         # zkTLS integration hook
-│   ├── lib/
-│   │   └── zktls/                    # Reclaim SDK integration
-│   └── config/
-│       └── index.ts                  # Solana configuration
-├── .env.local.example                # Environment template
-├── setup-zktls.sh                    # Setup script
-├── verify-setup.sh                   # Verification script
-├── ZKTLS_INTEGRATION.md             # Detailed integration guide
-├── INTEGRATION_SUMMARY.md            # Implementation summary
-└── QUICK_REFERENCE.md               # Quick reference guide
-```
-
-## 🔐 How It Works
-
-1. **Connect Wallet**: User connects their Solana wallet
-2. **Request Proof** (CLIENT-SIDE): User clicks "Request zkTLS Proof Generation"
-3. **Create Request** (CLIENT-SIDE): Proof request is created directly in the browser
-4. **Verify Identity**: User scans QR code and authenticates with payroll provider
-5. **Generate Proof**: zkTLS proof is generated securely
-6. **Verify Proof** (SERVER-SIDE): Backend verifies the proof cryptographically
-7. **Display Data**: Verified payroll data is displayed
-
-**Architecture:**
-- **Client-Side**: Proof request creation & generation (using `useZkTlsProof` hook)
-- **Server-Side**: Proof verification only (for security)
 
 ## 📚 Documentation
 
@@ -141,45 +101,6 @@ app/
 - **zkTLS**: Reclaim Protocol JS SDK
 - **Wallet**: Reown AppKit with Solana adapter
 
-## 📖 Usage Example
-
-### Using the zkTLS Button Component
-
-```tsx
-import { ZkTlsButton } from '@/components/ZkTlsButton';
-
-export default function Page() {
-  return (
-    <div>
-      <h1>Verify Your Payroll</h1>
-      <ZkTlsButton />
-    </div>
-  );
-}
-```
-
-### Using the zkTLS Hook
-
-```tsx
-import { useZkTlsProof } from '@/hooks/useZkTlsProof';
-
-function MyComponent() {
-  const { isGenerating, error, proofData, requestProof } = useZkTlsProof();
-  
-  return (
-    <button onClick={() => requestProof(walletAddress)}>
-      {isGenerating ? 'Generating...' : 'Verify Payroll'}
-    </button>
-  );
-}
-```
-
-## 🔒 Security
-
-- Server-side proof verification
-- Environment variables for sensitive credentials
-- No credential sharing with third parties
-- Cryptographic proof validation
 
 ## 🐛 Troubleshooting
 

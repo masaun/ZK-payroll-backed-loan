@@ -1,100 +1,48 @@
 # ZK Payroll-Backed Loan
 
-A decentralized lending platform on Solana that enables privacy-preserving payroll-backed loans using zero-knowledge proofs. Users can borrow funds without collateral by proving their employment and income through zkTLS and Noir ZK circuits, all while maintaining complete privacy.
+This project is the ZK Payroll-Backed Loan platform on Solana (Devnet) that enables a privacy-preserving payroll-backed loans using zero-knowledge proofs without any collateral and disclosing sensitive informations for borrowers by: 
+- proving a borrower's **payroll/income** through `zkTLS` protocol.
+- proving a borrower's **loan eligibility** through `Noir` ZK circuits.
 
 ## Overview
 
 This project demonstrates a novel approach to decentralized lending by combining:
-- **zkTLS Protocol (Reclaim Protocol)** - Privacy-preserving payroll verification without sharing credentials
-- **Noir ZK Circuits** - On-chain proof verification for loan eligibility
-- **Solana Smart Contracts** - Fast, low-cost lending pool management
+- **zkTLS Protocol (Reclaim Protocol)** - Generate a `ZK Payroll Proof`, which enable a borrower to prove their actual payroll histories (i.e. Payroll/Income amount, Payroll period, etc) without sharing credentials
+- **`Noir` ZK Circuits** - Generate a `ZK Payroll-Backed Loan Proof`, which enable a borrower to prove a loan eligibility based on the `ZK Payroll Proof` above without disclosing their sensitive informations.
+- **Solana Smart Contracts** - Fast, low-cost lending pool management and loan funds management. 
 - **Privacy-First Design** - Zero-knowledge proofs ensure user data remains confidential
 
-The system allows users to obtain loans based on their verified income without requiring traditional collateral, making DeFi lending more accessible while preserving user privacy.
+The system allows users to obtain loans based on their `verified payroll/income` and `verified loan eligibility` without requiring any collateral and a long loan eligibility valification process while preserving user privacy.
 
 ## Technical Stack
 
-### Frontend
-- **Next.js 15** - React framework with App Router
-- **React 19** - UI library
-- **TypeScript** - Type-safe development
-- **Reown AppKit** - Solana wallet integration
-- **Bootstrap 5** - UI components
+### Zero-Knowledge Proofs
+- **`Noir`** - Privacy-focused programming language for ZK circuits
+- **Aztec `bb.js`** - Proving backend for Noir circuits. In this project, this is used for the `off-chain` verificaton on client-side as well.
+
+- **Reclaim Protocol** - zkTLS proof generation and verification
+- **Poseidon Hash** - ZK-friendly cryptographic hash function
 
 ### Blockchain
 - **Solana** - High-performance blockchain (Devnet)
 - **Anchor Framework** - Rust-based Solana program development
-- **SPL Token** - Token standard for lending/borrowing
-
-### Zero-Knowledge Proofs
-- **Noir** - Privacy-focused programming language for ZK circuits
-- **Aztec bb.js** - Proving backend for Noir circuits
-- **Reclaim Protocol** - zkTLS proof generation and verification
-- **Poseidon Hash** - ZK-friendly cryptographic hash function
+- **SPL Token** - In this project, this is used for the `Test USDC` token.
 
 ### Smart Contracts (Anchor Programs)
-1. **ZK Verifiable Credential Manager** (`5noDS5EGojcw8BuRA9vDAmSUBE8iCY2jnQBhzkyEiU1K`)
-2. **Lending Pool** (`G1sjiVDaPgDd5yfChYKguKVZs6tD1GE6zewBQwWmsMJi`)
-3. **Borrowing Pool** (`CZAYDeyBbkC6DFiV8WRP9bdtdziixV8MP38sS9TARvPi`)
-4. **Test USDC** (`41NBEbnBWvQTLs6TRKCDWH88rJTpdFUvq5WA3zpQGYfY`)
+- See the README in the [./contract directory]().
 
-## Technical Details
+### Frontend
+- See the README in the [./app directory]().
 
-### Smart Contract Architecture
 
-#### 1. ZK Verifiable Credential Manager
-Manages zero-knowledge proofs and credentials for borrowers.
-
-**Key Functions:**
-- `store_zk_tls_proof_and_public_output()` - Store zkTLS payroll proof (up to 10KB)
-- `verify_credential()` - Authority-based credential verification
-- `revoke_credential()` - Revoke compromised credentials
-
-**Storage:**
-- Proof data: 10KB max
-- Public outputs: 2KB max
-- PDA-based credential storage
-
-#### 2. Lending Pool
-Manages liquidity from lenders and distributes funds to borrowers.
-
-**Key Functions:**
-- `initialize_lending_pool()` - Create new lending pool
-- `deposit_into_lending_pool()` - Lenders deposit tokens
-- `withdraw_from_lending_pool()` - Withdraw principal + interest
-- `borrow_from_pool()` - Borrow funds (called via CPI)
-- `repay_to_pool()` - Repay borrowed amount
-
-**Features:**
-- Configurable interest rates
-- Minimum deposit requirements
-- Liquidity tracking
-- Event emission for all operations
-
-#### 3. Borrowing Pool
-Manages borrowing against ZK-verified payroll proofs.
-
-**Key Functions:**
-- `borrow_from_lending_pool()` - Borrow based on ZK proof
-- `repay_to_lending_pool()` - Repay outstanding loans
-- `liquidate()` - Liquidate undercollateralized positions (if applicable)
-
-**Loan Validation:**
-- ZK proof verification (eligibility check)
-- Payroll-based borrow limits
-- Debt tracking per borrower
-
-### Zero-Knowledge Proof Systems
-
-The platform uses two distinct ZK proof systems for comprehensive privacy and security:
 
 ## What Each ZK Proof Verifies
 
 ### 1. ZK Payroll Proof (using zkTLS Protocol)
 
-**Technology:** Reclaim Protocol - zkTLS SDK
+**Technology:** `Reclaim Protocol`'s `zkTLS SDK`
 
-**Purpose:** Verify employment and payroll data from external payroll providers (e.g., ADP, Gusto, Workday) without exposing credentials or raw data.
+**Purpose:** Verify the borrower's `payroll data` from **external `payroll providers` (e.g., ADP, Gusto, Workday)** without exposing credentials or raw data.
 
 **What It Proves:**
 - User has active employment with a verified employer
@@ -136,7 +84,7 @@ The platform uses two distinct ZK proof systems for comprehensive privacy and se
 
 **Technology:** Noir ZK Circuit with Poseidon Hashing
 
-**Purpose:** Verify loan eligibility based on payroll data without revealing the underlying payroll information to the smart contract or public.
+**Purpose:** Verify the borrower's `loan eligibility` based on the verified `payroll data` without revealing the `underlying payroll informations`.
 
 **Circuit File:** [`circuits/payroll-backed-loan/src/main.nr`](circuits/payroll-backed-loan/src/main.nr)
 
@@ -204,81 +152,63 @@ nullifier = poseidon_hash_2(jurisdiction_code, allowed_jurisdiction_root)
 
 ```mermaid
 graph TB
-    subgraph "User Interface Layer"
-        A[Next.js Frontend]
-        A1[Borrow Page]
-        A2[Lend Page]
-        A3[Credential Page]
+    subgraph "Frontend Layer"
+        UI[Next.js Web App]
+        LendPage[Lend Page]
+        BorrowPage[Borrow Page]
     end
     
-    subgraph "Wallet Integration"
-        B[Reown AppKit]
-        B1[Solana Wallet Adapter]
+    subgraph "Wallet & Authentication"
+        Wallet[Solana Wallet via Reown AppKit]
     end
     
-    subgraph "ZK Proof Generation"
-        C1[zkTLS Layer - Reclaim Protocol]
-        C2[Noir ZK Circuit Layer]
-        C3[Aztec bb.js Prover]
+    subgraph "ZK Proof Generation Layer"
+        Reclaim[Reclaim zkTLS Protocol]
+        Noir[Noir ZK Circuit]
+        Payroll[Payroll Providers]
     end
     
-    subgraph "Verification Layer"
-        D1[Reclaim API Verifier]
-        D2[Noir Proof Verifier - TypeScript]
+    subgraph "Solana Devnet - Smart Contracts"
+        LendingPool[Lending Pool Program]
+        USDC[Test USDC Token]
     end
     
-    subgraph "Solana Blockchain - Devnet"
-        E1[ZK Credential Manager]
-        E2[Lending Pool Program]
-        E3[Borrowing Pool Program]
-        E4[Test USDC Token]
-    end
+    %% Lending Flow
+    LendPage --> Wallet
+    Wallet -->|Deposit Test USDC| LendingPool
+    LendingPool --> USDC
     
-    subgraph "External Data Sources"
-        F1[Payroll Providers - ADP/Gusto/etc]
-    end
+    %% Borrowing Flow
+    BorrowPage --> Wallet
+    BorrowPage -->|1. Generate ZK Payroll Proof| Reclaim
+    Reclaim --> Payroll
+    BorrowPage -->|2. Generate ZK Loan Proof| Noir
+    Noir -->|Uses Payroll Proof| Reclaim
+    Wallet -->|3. Transfer Loan| LendingPool
+    LendingPool -->|Test USDC to Borrower| USDC
     
-    A1 --> B
-    A1 --> C1
-    A1 --> C2
-    
-    B --> B1
-    
-    C1 --> F1
-    F1 --> C1
-    C1 --> D1
-    
-    C2 --> C3
-    C3 --> D2
-    
-    D1 --> E1
-    D2 --> E1
-    
-    B1 --> E2
-    B1 --> E3
-    
-    E3 --> E2
-    E2 --> E4
-    E3 --> E1
-    
-    style C1 fill:#9f6
-    style C2 fill:#6cf
-    style D1 fill:#fc6
-    style D2 fill:#fc6
-    style E1 fill:#f96
-    style E2 fill:#f96
-    style E3 fill:#f96
+    style Reclaim fill:#9f6
+    style Noir fill:#6cf
+    style LendingPool fill:#f96
+    style USDC fill:#fc9
 ```
 
-### Component Interaction Flow
+### Simple Flow Overview
 
-1. **User Authentication** - User connects Solana wallet via Reown AppKit
-2. **Payroll Verification** - User generates zkTLS proof through Reclaim Protocol
-3. **Proof Storage** - zkTLS proof stored in ZK Credential Manager
-4. **Eligibility Check** - Noir circuit generates proof of loan eligibility
-5. **Loan Request** - Borrowing program validates and processes loan
-6. **Fund Transfer** - Lending pool transfers funds to borrower
-7. **Repayment** - Borrower repays loan back to lending pool
+#### Lending Flow
+1. **Lender** connects Solana wallet via Reown AppKit
+2. **Lender** clicks "Deposit" button with desired Test USDC amount
+3. **Test USDC tokens** are transferred into the Lending Pool contract
+
+#### Borrowing Flow
+1. **Borrower** connects Solana wallet via Reown AppKit
+2. **Borrower** clicks "Request a Loan" button with desired loan amount
+3. **Step 1:** Generate ZK Payroll Proof via Reclaim zkTLS protocol
+   - Borrower proves payroll/income from external providers (ADP, Gusto, etc.)
+4. **Step 2:** Generate ZK Payroll-backed Loan Proof via Noir ZK circuit
+   - Circuit verifies loan eligibility based on payroll proof
+5. **Step 3:** Transfer loan amount in Test USDC from Lending Pool to Borrower on Solana Devnet
+   - Smart contract validates proofs and executes transfer
 
 ## User Flow
 
@@ -344,20 +274,26 @@ sequenceDiagram
 
 ### Detailed User Journey
 
-#### For Borrowers:
-1. **Connect Wallet** - Connect Solana wallet using Reown AppKit
-2. **Verify Payroll** - Generate zkTLS proof using Reclaim Protocol (QR code/browser extension)
-3. **Store Credential** - zkTLS proof stored on-chain in ZK Credential Manager
-4. **Generate ZK Proof** - Create Noir circuit proof showing loan eligibility
-5. **Request Loan** - Submit borrow transaction with ZK proof
-6. **Receive Funds** - Get Test USDC tokens in wallet
-7. **Repay Loan** - Repay borrowed amount + interest
-
 #### For Lenders:
 1. **Connect Wallet** - Connect Solana wallet
 2. **Deposit Funds** - Deposit Test USDC into lending pool
 3. **Earn Interest** - Receive interest from borrowers
 4. **Withdraw** - Withdraw principal + accumulated interest
+
+#### For Borrowers:
+1. **Connect Wallet** - Connect Solana wallet using Reown AppKit
+2. **Verify Payroll** - Generate zkTLS Payroll Proof using Reclaim Protocol (QR code/browser extension)
+3. **Store Credential** - zkTLS proof stored on-chain in ZK Credential Manager
+4. **Request Loan** - Submit a loan request with a loan amount. Then, a ZK Payroll-Backed Proof generation will get started, which check a borrower's loan eligibility based on a verified payroll data (zkTLS Payroll Proof and its public inputs by Reclaim zkTLS protocol)
+5. **Receive Funds** - Get Test USDC tokens in wallet
+6. **Repay Loan** - Repay borrowed amount + interest
+
+
+
+
+## DEMO Video
+
+- https://www.loom.com/share/6872125a457c4ec7ba5fdb9180e3af48
 
 ## Limitations
 
@@ -368,93 +304,33 @@ sequenceDiagram
    - Uses Test USDC tokens (no real value)
    - Not audited for mainnet deployment
 
-2. **ZK Proof Verification**
-   - Noir proofs verified off-chain (TypeScript)
-   - On-chain Solana verifier program not yet implemented
-   - Future: Deploy Groth16/HONK verifier as Solana program
+2. **For `ZK Payroll-Backed Loan Proof` verification**
+   - Noir proofs verified `off-chain` (using `@aztec/bb.js`) at the momemnt.
+   - On-chain Solana verifier program using `SunSpot` has not implemented yet.
 
-3. **zkTLS Integration**
-   - Limited to specific payroll providers supported by Reclaim Protocol
-   - Requires Reclaim mobile app or browser extension
-   - Depends on third-party zkTLS infrastructure
-
-4. **Scalability**
-   - Proof generation is computationally intensive (client-side)
-   - Large circuit size may impact browser performance
-   - Storage limits (10KB for zkTLS proof, 2KB for public outputs)
-
-5. **Security Considerations**
-   - No formal security audit conducted
-   - Test environment only - not production-ready
-   - Smart contract authority controls need enhancement
+3. **For `ZK Payroll Proof` generation & verification: zkTLS Integration (using Reclaim zkTLS protocol and its zkTLS SDK)**
+   - In progress to integrate
 
 6. **Loan Management**
    - Interest rate calculation is simplified
    - No automated liquidation mechanism for defaulted loans
    - Limited credit risk assessment
 
-7. **Privacy Limitations**
-   - Public outputs reveal loan approval status
-   - Nullifiers can be correlated across applications
-   - On-chain transaction history is public
 
-8. **User Experience**
-   - Proof generation can take 10-60 seconds
-   - Requires multiple transaction confirmations
-   - Mobile-first zkTLS flow may not be convenient for desktop users
+## Roadmap
 
-## Next on the Roadmap
+- Complete the zkTLS protocol (Reclaim Protocol) integration.
 
-### Phase 1: On-Chain Verification (Q1 2025)
-- [ ] Implement Groth16 verifier contract for Solana
-- [ ] Deploy HONK/UltraPLONK verifier using Anchor
-- [ ] Integrate Solana verifier with borrowing program
-- [ ] Benchmark on-chain verification costs
+- Complete the `Sanction (OFAC) Check` circuit using `Noir`.
 
-### Phase 2: Enhanced Privacy (Q2 2025)
-- [ ] Implement anonymous credentials using BBS+ signatures
-- [ ] Add decoy transactions for better privacy
-- [ ] Implement private loan pools (lender privacy)
-- [ ] Zero-knowledge credit scoring system
+- Integrate `SunSpot` in order to realize the on-chain verification of ZK Payroll-Backed Loan Proof using Noir ZK circuit on Solana Devnet
 
-### Phase 3: Risk Management (Q2-Q3 2025)
-- [ ] Dynamic interest rates based on ZK credit scores
-- [ ] Automated liquidation with grace periods
-- [ ] Insurance pool for lender protection
-- [ ] Multi-factor ZK identity verification
-
-### Phase 4: Advanced Features (Q3 2025)
-- [ ] Cross-chain lending (Solana ↔ Ethereum via Wormhole)
-- [ ] Loan refinancing and consolidation
-- [ ] Partial repayment schedules
-- [ ] Decentralized dispute resolution
-
-### Phase 5: Ecosystem Expansion (Q4 2025)
-- [ ] Support for multiple payroll providers (50+ providers)
-- [ ] Integration with Web2 income sources (freelancer platforms, gig economy)
-- [ ] zkPassport integration for jurisdiction verification
-- [ ] OFAC sanctions screening using ZK circuits
-
-### Phase 6: Production Deployment (Q1 2026)
-- [ ] Comprehensive security audit (smart contracts + ZK circuits)
-- [ ] Mainnet deployment on Solana
-- [ ] Regulatory compliance framework
-- [ ] Bug bounty program
-- [ ] User onboarding flow optimization
-
-### Long-Term Vision
-- **Decentralized Credit Bureau** - Privacy-preserving credit history
-- **AI-Powered Risk Assessment** - ZK machine learning for loan approval
-- **Global Accessibility** - Support for 100+ countries
-- **Traditional Finance Integration** - Bridge to TradFi lending markets
 
 ## References
 
-### Zero-Knowledge Proofs
+### `Noir` ZK circuit
 - [Noir Language Documentation](https://noir-lang.org/)
-- [Aztec bb.js Documentation](https://docs.aztec.network/)
-- [Poseidon Hash Function](https://www.poseidon-hash.info/)
-- [zkSNARKs Explained](https://z.cash/technology/zksnarks/)
+- [Aztec Documentation](https://docs.aztec.network/)
 
 ### zkTLS & Reclaim Protocol
 - [Reclaim Protocol Documentation](https://docs.reclaimprotocol.org/)
@@ -468,26 +344,3 @@ sequenceDiagram
 - [Solana Program Library (SPL)](https://spl.solana.com/)
 - [Reown AppKit for Solana](https://docs.reown.com/appkit/overview)
 
-### Related Projects
-- [zkPassport - SunSpot Example](https://github.com/zkPassport/sunspot-example)
-- [Aztec Protocol](https://aztec.network/)
-- [Tornado Cash](https://tornado.cash/) (Privacy on Ethereum)
-- [Mina Protocol](https://minaprotocol.com/) (ZK-based blockchain)
-
-### Research Papers
-- [zkTLS: Transport Layer Security with Zero-Knowledge Proofs](https://eprint.iacr.org/2023/1456)
-- [Privacy-Preserving Credit Scoring](https://eprint.iacr.org/2022/834)
-- [Zero-Knowledge Proofs for Financial Services](https://arxiv.org/abs/2110.14067)
-
-### Community & Support
-- [Noir Discord](https://discord.gg/noir)
-- [Solana Stack Exchange](https://solana.stackexchange.com/)
-- [Reclaim Protocol Telegram](https://t.me/reclaimprotocol)
-
----
-
-**Built for Solana Privacy Hackathon 🔐 (Jan 12 - Feb 1, 2026)**
-
-**License:** MIT
-
-**Contributors:** Welcome! Please open an issue or PR.
