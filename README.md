@@ -148,59 +148,41 @@ assert(loan_amount <= payroll_amount * repayment_ratio);
 nullifier = poseidon_hash_2(jurisdiction_code, allowed_jurisdiction_root)
 ```
 
-## Architecture
+## Architecture & Userflow
 
-```mermaid
-graph TB
-    subgraph "Frontend Layer"
-        UI[Next.js Web App]
-        LendPage[Lend Page]
-        BorrowPage[Borrow Page]
-    end
-    
-    subgraph "Wallet & Authentication"
-        Wallet[Solana Wallet via Reown AppKit]
-    end
-    
-    subgraph "ZK Proof Generation Layer"
-        Reclaim[Reclaim zkTLS Protocol]
-        Noir[Noir ZK Circuit]
-        Payroll[Payroll Providers]
-    end
-    
-    subgraph "Solana Devnet - Smart Contracts"
-        LendingPool[Lending Pool Program]
-        USDC[Test USDC Token]
-    end
-    
-    %% Lending Flow
-    LendPage --> Wallet
-    Wallet -->|Deposit Test USDC| LendingPool
-    LendingPool --> USDC
-    
-    %% Borrowing Flow
-    BorrowPage --> Wallet
-    BorrowPage -->|1. Generate ZK Payroll Proof| Reclaim
-    Reclaim --> Payroll
-    BorrowPage -->|2. Generate ZK Loan Proof| Noir
-    Noir -->|Uses Payroll Proof| Reclaim
-    Wallet -->|3. Transfer Loan| LendingPool
-    LendingPool -->|Test USDC to Borrower| USDC
-    
-    style Reclaim fill:#9f6
-    style Noir fill:#6cf
-    style LendingPool fill:#f96
-    style USDC fill:#fc9
-```
-
-### Simple Flow Overview
-
-#### Lending Flow
+### Lending Flow
 1. **Lender** connects Solana wallet via Reown AppKit
 2. **Lender** clicks "Deposit" button with desired Test USDC amount
 3. **Test USDC tokens** are transferred into the Lending Pool contract
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         LENDER                               │
+│                  (Connected via Wallet)                      │
+└───────────────┬─────────────────────────────────────────────┘
+                │
+                │ Click "Deposit" with Amount
+                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Lending Pool Contract                       │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ Function:                                          │     │
+│  │ • deposit_into_lending_pool(amount)                │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                               │
+│  Action:                                                      │
+│  └─ Transfer Test USDC from Lender → Lending Pool Vault      │
+│                                                               │
+│  Storage Update:                                              │
+│  ├─ LendingPool PDA                                           │
+│  │  ├─ total_deposits += amount                              │
+│  │  └─ pool_vault (holds Test USDC)                          │
+│  └─ DepositorAccount PDA                                      │
+│     ├─ deposited_amount += amount                             │
+│     └─ deposit_timestamp = now()                              │
+└─────────────────────────────────────────────────────────────┘
+```
 
-#### Borrowing Flow
+### Borrowing Flow
 1. **Borrower** connects Solana wallet via Reown AppKit
 2. **Borrower** clicks "Request a Loan" button with desired loan amount
 3. **Step 1:** Generate ZK Payroll Proof via Reclaim zkTLS protocol
@@ -209,86 +191,69 @@ graph TB
    - Circuit verifies loan eligibility based on payroll proof
 5. **Step 3:** Transfer loan amount in Test USDC from Lending Pool to Borrower on Solana Devnet
    - Smart contract validates proofs and executes transfer
-
-## User Flow
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Frontend as Next.js Frontend
-    participant Wallet as Solana Wallet
-    participant Reclaim as Reclaim zkTLS
-    participant Payroll as Payroll Provider
-    participant Noir as Noir Circuit
-    participant Verifier as ZK Verifier
-    participant Solana as Solana Programs
-    
-    %% Step 1: Connect Wallet
-    User->>Frontend: Visit Borrow Page
-    User->>Wallet: Connect Wallet
-    Wallet-->>Frontend: Wallet Connected
-    
-    %% Step 2: Generate zkTLS Proof
-    User->>Frontend: Click "Request zkTLS Proof"
-    Frontend->>Reclaim: Initialize Proof Request
-    Reclaim-->>Frontend: QR Code / Request URL
-    Frontend-->>User: Display QR Code
-    
-    User->>Reclaim: Scan QR / Open Link
-    Reclaim->>User: Redirect to Payroll Login
-    User->>Payroll: Authenticate
-    Payroll-->>Reclaim: Return Payroll Data (TLS)
-    Reclaim->>Reclaim: Generate zkTLS Proof
-    Reclaim-->>Frontend: Return zkTLS Proof
-    
-    %% Step 3: Store zkTLS Proof
-    Frontend->>Verifier: Verify zkTLS Proof
-    Verifier-->>Frontend: Proof Valid
-    Frontend->>Solana: store_zk_tls_proof_and_public_output()
-    Solana-->>Frontend: Proof Stored
-    
-    %% Step 4: Generate Noir ZK Proof
-    User->>Frontend: Enter Loan Amount
-    Frontend->>Noir: Generate Loan Eligibility Proof
-    Note over Noir: Private Inputs:<br/>- payroll_amount<br/>- tenure<br/>- loan_amount
-    Noir->>Noir: Verify Constraints
-    Noir-->>Frontend: ZK Proof + Public Outputs
-    
-    Frontend->>Verifier: Verify Noir Proof
-    Verifier-->>Frontend: Proof Valid
-    
-    %% Step 5: Borrow Funds
-    Frontend->>Solana: borrow_from_lending_pool(amount)
-    Solana->>Solana: Validate Borrower State
-    Solana->>Solana: Transfer Funds (Lending → Borrower)
-    Solana-->>Frontend: Transaction Success
-    Frontend-->>User: Loan Approved! Funds Sent
-    
-    %% Step 6: Repayment (Optional)
-    User->>Frontend: Repay Loan
-    Frontend->>Solana: repay_to_lending_pool(amount)
-    Solana->>Solana: Transfer Funds (Borrower → Lending)
-    Solana-->>Frontend: Repayment Success
-    Frontend-->>User: Loan Repaid
 ```
-
-### Detailed User Journey
-
-#### For Lenders:
-1. **Connect Wallet** - Connect Solana wallet
-2. **Deposit Funds** - Deposit Test USDC into lending pool
-3. **Earn Interest** - Receive interest from borrowers
-4. **Withdraw** - Withdraw principal + accumulated interest
-
-#### For Borrowers:
-1. **Connect Wallet** - Connect Solana wallet using Reown AppKit
-2. **Verify Payroll** - Generate zkTLS Payroll Proof using Reclaim Protocol (QR code/browser extension)
-3. **Store Credential** - zkTLS proof stored on-chain in ZK Credential Manager
-4. **Request Loan** - Submit a loan request with a loan amount. Then, a ZK Payroll-Backed Proof generation will get started, which check a borrower's loan eligibility based on a verified payroll data (zkTLS Payroll Proof and its public inputs by Reclaim zkTLS protocol)
-5. **Receive Funds** - Get Test USDC tokens in wallet
-6. **Repay Loan** - Repay borrowed amount + interest
-
-
+┌─────────────────────────────────────────────────────────────┐
+│                        BORROWER                              │
+│                 (Connected via Wallet)                       │
+└───────────────┬─────────────────────────────────────────────┘
+                │
+                │ Click "Request a Loan" with Amount
+                ▼
+┌─────────────────────────────────────────────────────────────┐
+│              STEP 1: Generate ZK Payroll Proof              │
+│                   (Reclaim zkTLS Protocol)                   │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ • Borrower authenticates with Payroll Provider     │     │
+│  │   (ADP, Gusto, Workday, etc.)                      │     │
+│  │ • zkTLS generates proof of payroll data            │     │
+│  │ • Proof contains: salary, employment status, etc.  │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                               │
+│  Output: ZK Payroll Proof (zkTLS)                            │
+└───────────────┬─────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────┐
+│        STEP 2: Generate ZK Payroll-backed Loan Proof        │
+│                    (Noir ZK Circuit)                         │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ • Takes ZK Payroll Proof as input                  │     │
+│  │ • Verifies loan eligibility:                       │     │
+│  │   - Employment status = active                     │     │
+│  │   - Salary >= minimum threshold                    │     │
+│  │   - Loan amount <= (salary × ratio)                │     │
+│  │   - Tenure >= 12 months                            │     │
+│  │ • Generates ZK Proof of eligibility                │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                               │
+│  Output: ZK Loan Eligibility Proof (Noir)                    │
+└───────────────┬─────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────┐
+│       STEP 3: Transfer Loan from Lending Pool               │
+│                 (Solana Smart Contract)                      │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ Function:                                          │     │
+│  │ • borrow_from_lending_pool(amount)                 │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                               │
+│  Validation:                                                  │
+│  ├─ Verify ZK Proofs (off-chain verification)                │
+│  ├─ Check lending pool has sufficient liquidity              │
+│  └─ Validate borrower eligibility                            │
+│                                                               │
+│  Action:                                                      │
+│  └─ Transfer Test USDC from Lending Pool → Borrower          │
+│                                                               │
+│  Storage Update:                                              │
+│  ├─ LendingPool PDA                                           │
+│  │  └─ total_borrowed += amount                              │
+│  └─ BorrowerState PDA                                         │
+│     ├─ borrowed_amount = amount                               │
+│     └─ borrow_timestamp = now()                               │
+└─────────────────────────────────────────────────────────────┘
+```
 
 
 ## DEMO Video

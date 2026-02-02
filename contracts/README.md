@@ -114,9 +114,7 @@ Manages collateralized borrowing against the lending pool.
 - PDA-based borrower state tracking
 
 
-# System Architecture
-
-## Simple Contract Interaction Flow
+# System Architecture (Simple Contract Interaction Flow)
 
 ### Lending Flow
 
