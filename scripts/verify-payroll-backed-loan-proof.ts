@@ -21,7 +21,7 @@ import {
 } from "@solana-noir-examples/lib/verify";
 
 // @dev - Import Poseidon and Sparse Merkle Tree utilities for nullifier computation from the smt.ts
-import { initPoseidon, poseidonHash2, fieldToHex } from "./utils/poseidon-and-merkle-tree/smt";
+import { initPoseidon, poseidonHash2, fieldToHex } from "./utils/poseidon-and-merkle-tree/smt.js";
 
 // Load environment variables from .env file
 dotenv.config({ path: path.join(process.cwd(), "..", ".env") });
