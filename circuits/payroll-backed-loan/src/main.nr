@@ -96,8 +96,8 @@ fn main(
 
     // 7. Prevent double factoring (= @dev - Merkle Tree of nuillifiers may be needed + The Merkle Root of nullifiers should be stored into on-chain and passed as public input of this ZK circuit)
     let expected_nullifier = poseidon_hash_2(
-        jurisdiction_code,
-        allowed_jurisdiction_root
+        jurisdiction_code,          // [TDOO]: This is a temporary argument. We should change the arguments of nullifier computation here.
+        allowed_jurisdiction_root  // [TDOO]: This is a temporary argument. We should change the arguments of nullifier computation here. 
     );
     assert(nullifier == expected_nullifier);
 
